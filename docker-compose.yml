@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  disaster_db:
+    image: postgis/postgis:15-3.3
+    container_name: disaster_db
+    environment:
+      - POSTGRES_DB=disaster_db
+      - POSTGRES_USER=ian
+      - POSTGRES_PASSWORD=Qwerty12345
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data 
+
+  disaster_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: disaster_app
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501" 
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - disaster_db
+
+
+volumes:
+  db_data:  
