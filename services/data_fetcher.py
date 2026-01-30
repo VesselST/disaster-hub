@@ -1,22 +1,36 @@
-# services/data_fetcher.py
-import requests
+import json
+import os
+from models.shelter import Shelter
 
-class ShelterDataFetcher:
-    def get_data(self):
+#指定資料路徑
+class DataFetcher:
+    def __init__(self):
+        self.data_path = "data.json"
+
+    #將本地json資料轉為sheltr物件清單
+    def get_shelters(self) -> list[Shelter]:
+        if not os.path.exists(self.data_path):
+            print(f"error:cannot find the dataflie {self.data_path}")
+            return []
+
         try:
-            # 嘗試連線
-            response = requests.get("https://data.moi.gov.tw/MoiBackend/api/Data/Generic/Get?id=D15000-000049", timeout=5)
-            if response.status_code == 200:
-                return self._parse_data(response.json())
-        except:
-            # 如果連不上，回傳一組「開發用備援數據」
-            print("警告：API 連線失敗，啟動備援模擬數據模式")
-            return [
-                {"name": "台北 101 避難點 (模擬)", "lat": 25.0339, "lon": 121.5644, "capacity": 1000},
-                {"name": "高雄 85 大樓 (模擬)", "lat": 22.6116, "lon": 120.3003, "capacity": 500}
-            ]
-        return []
-
-    def _parse_data(self, data):
-        # 這裡保留你之前的解析邏輯
-        return [{"name": "真實數據", "lat": 0, "lon": 0}]
+            with open(self.data_path, 'r', encoding='utf-8') as f:
+                raw_data = json.load(f)
+                
+            shelters = []
+            #將所有json所有格式轉為shelter中定義好的模型
+            for item in raw_data:
+                shelter = Shelter(
+                    name=item.get("name"),
+                    total_vessel=item.get("total_vessel", 0),
+                    total_people=item.get("total_people", 0),
+                    lat=item.get("lat", 0.0),
+                    lon=item.get("lon", 0.0)
+                )
+                shelters.append(shelter)
+            
+            return shelters
+        
+        except Exception as e:
+            print(f"catching json reading error: {e}")
+            return []
