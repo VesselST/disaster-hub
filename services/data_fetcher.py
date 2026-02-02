@@ -22,8 +22,8 @@ class DataFetcher:
             for item in raw_data:
                 shelter = Shelter(
                     name=item.get("name"),
-                    total_vessel=item.get("total_vessel", 0),
-                    total_people=item.get("total_people", 0),
+                    total_vessel=item.get("Total_vessel", 0),
+                    total_people=item.get("Total_people", 0),
                     lat=item.get("lat", 0.0),
                     lon=item.get("lon", 0.0)
                 )

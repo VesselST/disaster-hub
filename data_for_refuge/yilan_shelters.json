@@ -1,0 +1,163 @@
+[
+    {
+        "name":"宜蘭市國民運動中心",
+        "total_vessel":"1200",
+        "total_poeple":"0",
+        "address":"宜蘭縣宜蘭市公園路66號",
+        "lat":"24.7495",
+        "lon":"121.7562"
+    }
+    
+    ,{
+        "name":"宜蘭國小",
+        "total_vessel":"500",
+        "total_poeple":"0",
+        "address":"宜蘭縣宜蘭市崇聖街2號",
+        "lat":"24.7589",
+        "lon":"121.7533"
+    }
+    ,
+    {   "name":"羅東鎮立體育館",
+        "total_vessel":"800",
+        "total_poeple":"0",
+        "address":"宜蘭縣羅東鎮體育路15號",
+        "lat":"24.6811",
+        "lon":"121.7712"
+    }
+    ,
+    {   "name":"羅東國小",
+        "total_vessel":"450",
+        "total_poeple":"0",
+        "address":"宜蘭縣羅東鎮民族路1號",
+        "lat":"24.6757",
+        "lon":"121.7686"
+    }
+    ,
+    {   "name":"蘇澳鎮立體育館",
+        "total_vessel":"600",
+        "total_poeple":"0",
+        "address":"宜蘭縣蘇澳鎮光明路",
+        "lat":"24.6022",
+        "lon":"121.8415"
+    }
+    ,
+    {   "name":"蘇澳國小",
+        "total_vessel":"320",
+        "total_poeple":"0",
+        "address":"宜蘭縣蘇澳鎮中山路一段366號",
+        "lat":"24.5959",
+        "lon":"121.8485"
+    }
+    ,
+    {   "name":"頭城國小",
+        "total_vessel":"400",
+        "total_poeple":"0",
+        "address":"宜蘭縣頭城鎮開蘭路282號",
+        "lat":"24.8562",
+        "lon":"121.8213"
+    }
+    ,
+    {   "name":"二城國小",
+        "total_vessel":"300",
+        "total_poeple":"0",
+        "address":"宜蘭縣頭城鎮青雲路二段200號",
+        "lat":"24.8315",
+        "lon":"121.7925"
+    }
+    ,
+    {   "name":"礁溪國中",
+        "total_vessel":"550",
+        "total_poeple":"0",
+        "address":"宜蘭縣礁溪鄉礁溪路四段23號",
+        "lat":"24.8211",
+        "lon":"121.7705"
+    }
+    ,
+    {   "name":"壯圍國小",
+        "total_vessel":"300",
+        "total_poeple":"0",
+        "address":"宜蘭縣壯圍鄉壯五路55號",
+        "lat":"24.7471",
+        "lon":"121.7885"
+    }
+    ,
+    {   "name":"壯圍國中",
+        "total_vessel":"300",
+        "total_poeple":"0",
+        "address":"宜蘭縣壯圍鄉富祥路588號",
+        "lat":"24.7451",
+        "lon":"121.7852"
+    }
+    ,
+    {   "name":"東元鄉體育館",
+        "total_vessel":"350",
+        "total_poeple":"0",
+        "address":"宜蘭縣員山鄉復興路39號",
+        "lat":"24.7415",
+        "lon":"121.7198"
+    }
+    ,
+    {   "name":"清溝國小",
+        "total_vessel":"350",
+        "total_poeple":"0",
+        "address":"宜蘭縣冬山鄉永清路369號",
+        "lat":"24.6732",
+        "lon":"121.7511"
+    }
+    ,
+    {   "name":"中興國小附幼",
+        "total_vessel":"350",
+        "total_poeple":"0",
+        "address":"宜蘭縣五結鄉中興路三段67號",
+        "lat":"24.7001",
+        "lon":"121.7752"
+    }
+    ,
+    {   "name":"三星國中",
+        "total_vessel":"400",
+        "total_poeple":"0",
+        "address":"宜蘭縣三星鄉星義路72號",
+        "lat":"24.6675",
+        "lon":"121.6482"
+    }
+    ,
+    {   "name":"三星鄉綜合運動場",
+        "total_vessel":"500",
+        "total_poeple":"0",
+        "address":"宜蘭縣三星鄉星中路500巷16號",
+        "lat":"24.6652",
+        "lon":"121.6451"
+    }
+    ,
+    {   "name":"大同鄉公所",
+        "total_vessel":"150",
+        "total_poeple":"0",
+        "address":"宜蘭縣大同鄉朝陽巷37號",
+        "lat":"24.6751",
+        "lon":"121.6062"
+    }
+    ,
+    {   "name":"南山國小",
+        "total_vessel":"200",
+        "total_poeple":"0",
+        "address":"宜蘭縣大同鄉埤南巷31之3號",
+        "lat":"24.4325",
+        "lon":"121.3789"
+    }
+    ,
+    {   "name":"南澳鄉綜合體育場",
+        "total_vessel":"550",
+        "total_poeple":"0",
+        "address":"宜蘭縣南澳鄉大通路112-2號",
+        "lat":"24.4651",
+        "lon":"121.7992"
+    }
+    ,
+    {   "name":"澳花國小",
+        "total_vessel":"150",
+        "total_poeple":"0",
+        "address":"宜蘭縣南澳鄉中央路19號",
+        "lat":"24.3512",
+        "lon":"121.7455"
+    }
+]

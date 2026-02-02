@@ -12,7 +12,7 @@ class ShelterRepository:
         }
 
 
-    #建立跟資料庫的連結
+    #跟資料庫連結
     def connect_database(self):
         return psycopg2.connect(**self.parms)
 
