@@ -1,73 +1,91 @@
 import flet as ft
 import plotly.graph_objects as go
+from flet.plotly_chart import PlotlyChart  
+
 from repositories.shelter_repository import ShelterRepository
 from services.map_server import MapService
 
+# ... 前面的 import 不變 ...
+
 def main(page: ft.Page):
-    page.title = "Disaster Hub - 3D 視覺化"
+    page.title = "Disaster Hub - 內嵌 3D 監控"
     page.theme_mode = ft.ThemeMode.DARK
     
-    repo = ShelterRepository()
-    map_service = MapService()
-
-    def handle_show_3d(e):
-        # 1. 抓取資料庫資料
-        shelters = repo.get_all_shelters()
-        # 2. 透過測試過的 Service 轉換資料
-        data = map_service.prepare_3d_data(shelters)
-        
-        # 3. 準備 Plotly 3D 繪圖數據
-        lons = [d['lon'] for d in data]
-        lats = [d['lat'] for d in data]
-        heights = [d['z'] for d in data] # Z 軸為容量
-        names = [f"{d['name']}<br>人數: {d['ppl']}" for d in data]
-
-        fig = go.Figure(data=[go.Scatter3d(
-            x=lons,
-            y=lats,
-            z=heights,
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=heights,                # 顏色根據容量變化
-                colorscale='Portland',        # 暖色調
-                opacity=0.9,
-                colorbar=dict(title="容量")
-            ),
-            hovertext=names,
-            hoverinfo='text'
-        )])
-
-        # 設定 3D 座標軸標籤
-        fig.update_layout(
-            title="東部避難所 3D 空間分佈 (高度 = 容納量)",
-            scene=dict(
-                xaxis_title='經度 (Lon)',
-                yaxis_title='緯度 (Lat)',
-                zaxis_title='容納量 (Capacity)'
-            ),
-            margin=dict(l=0, r=0, b=0, t=40)
-        )
-        
-        fig.show() # 這會彈出瀏覽器顯示互動圖表
-
-    # Flet 介面配置
-    page.add(
-        ft.Container(
-            padding=30,
-            content=ft.Column([
-                ft.Text("🛡️ 災難應變 3D 監控系統", size=32, weight="bold"),
-                ft.Text("目前已載入宜蘭、花蓮、台東共 50 處避難所資料", color=ft.Colors.GREY_400),
-                ft.Divider(height=20),
-                ft.ElevatedButton(
-                    "開啟 3D 互動圖表", 
-                    icon=ft.Icons.THREED_ROTATION,
-                    on_click=handle_show_3d,
-                    style=ft.ButtonStyle(padding=20)
-                ),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        )
+    # 這是右側的顯示區域
+    main_content = ft.Column(
+        [ft.Text("點擊按鈕載入 3D 地圖")], 
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        expand=True
     )
 
-if __name__ == "__main__":
-    ft.app(target=main)
+    def load_3d_map(e):
+    # 1. 顯示讀取中
+        main_content.controls.clear()
+        main_content.controls.append(ft.ProgressRing())
+        main_content.controls.append(ft.Text("正在產生 3D 模型...", color="blue"))
+        page.update()
+
+    try:
+        # --- 測試用最簡化數據 (先確保圖表能顯示) ---
+        fig = go.Figure(data=[go.Scatter3d(
+            x=[1, 2, 3], 
+            y=[4, 5, 6], 
+            z=[7, 8, 9], 
+            mode='markers',
+            marker=dict(size=10, color='red')
+        )])
+        
+        fig.update_layout(
+            template="plotly_dark",
+            margin=dict(l=0, r=0, b=0, t=0),
+            scene=dict(
+                xaxis_title='經度',
+                yaxis_title='緯度',
+                zaxis_title='容量'
+            )
+        )
+
+        # 2. 準備 PlotlyChart 元件
+        # 關鍵：加上明確的 height，有時候 Column 內縮放會導致高度變 0
+        chart = PlotlyChart(fig, expand=True)
+
+        # 3. 清除轉圈圈，放入圖表
+        main_content.controls.clear()
+        main_content.controls.append(chart)
+        
+    except Exception as ex:
+        # 如果出錯，至少要把錯誤印出來
+        main_content.controls.clear()
+        main_content.controls.append(ft.Text(f"產生失敗: {str(ex)}", color="red"))
+    
+    # 4. 最後一次更新頁面
+    page.update()
+    # 佈局
+    page.add(
+        ft.Row([
+            # 左側側邊欄
+            # 左側側邊欄
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("監控面板", size=25, weight="bold"),
+                    ft.ElevatedButton(
+                        "載入/重整 3D 地圖", 
+                        icon=ft.icons.REFRESH,  # 之前修正的拼字
+                        on_click=load_3d_map    # 確保你的函式名稱與此一致
+                    ),
+                    ft.Divider(),
+                    # 顏色建議直接用字串，如 "green" 或 "green600"
+                    ft.Text("數據狀態: 50 筆已同步", color="green"),
+                ]),
+                width=250,
+                padding=20,
+                bgcolor="surfacevariant" # 修正這裡，改用字串避開 AttributeError
+            ),
+            # 右側地圖區
+            ft.VerticalDivider(width=1),
+            main_content
+        ], expand=True)
+    )
+
+ft.app(target=main)
