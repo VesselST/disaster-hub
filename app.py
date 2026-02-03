@@ -2,52 +2,61 @@ import flet as ft
 from repositories.shelter_repository import ShelterRepository
 
 def main(page: ft.Page):
-    page.title = "Disaster Hub - 東部避難所監控系統"
+    page.title = "Disaster Hub"
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 20
+    page.scroll = ft.ScrollMode.ADAPTIVE  
     
-    # 建立 Repository 實例
     repo = ShelterRepository()
     
     # 標題
-    header = ft.Text("🌲 東部避難所即時清單", style=ft.TextThemeStyle.HEADLINE_MEDIUM, color=ft.Colors.BLUE_200)
+    header = ft.Text(
+        " 東部避難所監控系統", 
+        size=30, 
+        weight=ft.FontWeight.BOLD, 
+        color=ft.Colors.BLUE_200
+    )
 
-    # 取得資料庫資料
+    # 取得資料
     try:
         shelters = repo.get_all_shelters()
         
-        # 建立表格
-        data_table = ft.DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("名稱")),
-                ft.DataColumn(ft.Text("總容量"), numeric=True),
-                ft.DataColumn(ft.Text("目前人數"), numeric=True),
-                ft.DataColumn(ft.Text("經緯度")),
-            ],
-            rows=[
-                ft.DataRow(
-                    cells=[
-                        ft.DataCell(ft.Text(s.name)),
-                        ft.DataCell(ft.Text(str(s.total_vessel))),
-                        ft.DataCell(ft.Text(str(s.total_people))),
-                        ft.DataCell(ft.Text(f"{s.lat:.4f}, {s.lon:.4f}")),
-                    ]
-                ) for s in shelters
-            ],
-        )
+        # 建立展示卡片清單
+        shelter_list = ft.Column(spacing=10)
+        
+        for s in shelters:
+            # 根據地區給予不同顏色標籤
+            region_color = ft.Colors.ORANGE_400 if "[YILAN]" in s.name else ft.Colors.BLUE_400
+            
+            card = ft.Card(
+                content=ft.Container(
+                    padding=15,
+                    content=ft.Column([
+                        ft.ListTile(
+                            leading=ft.Icon(ft.Icons.ROOFING, color=region_color),
+                            title=ft.Text(s.name, weight=ft.FontWeight.BOLD),
+                            subtitle=ft.Text(f"座標: {s.lat}, {s.lon}"),
+                        ),
+                        ft.Row([
+                            ft.Text(f" 總容量: {s.total_vessel}", color=ft.Colors.GREY_400),
+                            ft.VerticalDivider(),
+                            ft.Text(f" 目前人數: {s.total_people}", 
+                                   color=ft.Colors.RED_400 if s.total_people > 0 else ft.Colors.GREEN_400),
+                        ], alignment=ft.MainAxisAlignment.START)
+                    ])
+                )
+            )
+            shelter_list.controls.append(card)
 
-        # 用滾動視窗包裝表格
-        list_view = ft.ListView(expand=True, spacing=10, padding=10)
-        list_view.controls.append(data_table)
-
+        # 把標題和清單加到頁面
         page.add(
             header,
+            ft.Text(f"目前共計: {len(shelters)} 筆資料", color=ft.Colors.GREY_500),
             ft.Divider(),
-            list_view
+            shelter_list
         )
 
     except Exception as e:
-        page.add(ft.Text(f"資料讀取失敗: {e}", color=ft.Colors.RED))
+        page.add(ft.Text(f"發生錯誤: {e}", color="red"))
 
     page.update()
 
