@@ -28,7 +28,7 @@ class ShelterRepository:
                 cursor.execute(sql, (
                     shelter.name, 
                     shelter.total_vessel, 
-                    shelter.total_poeple, 
+                    shelter.total_people, 
                     shelter.lon, 
                     shelter.lat
                 ))
