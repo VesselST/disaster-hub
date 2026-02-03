@@ -1,64 +1,73 @@
 import flet as ft
+import plotly.graph_objects as go
 from repositories.shelter_repository import ShelterRepository
+from services.map_server import MapService
 
 def main(page: ft.Page):
-    page.title = "Disaster Hub"
+    page.title = "Disaster Hub - 3D 視覺化"
     page.theme_mode = ft.ThemeMode.DARK
-    page.scroll = ft.ScrollMode.ADAPTIVE  
     
     repo = ShelterRepository()
-    
-    # 標題
-    header = ft.Text(
-        " 東部避難所監控系統", 
-        size=30, 
-        weight=ft.FontWeight.BOLD, 
-        color=ft.Colors.BLUE_200
-    )
+    map_service = MapService()
 
-    # 取得資料
-    try:
+    def handle_show_3d(e):
+        # 1. 抓取資料庫資料
         shelters = repo.get_all_shelters()
+        # 2. 透過測試過的 Service 轉換資料
+        data = map_service.prepare_3d_data(shelters)
         
-        # 建立展示卡片清單
-        shelter_list = ft.Column(spacing=10)
-        
-        for s in shelters:
-            # 根據地區給予不同顏色標籤
-            region_color = ft.Colors.ORANGE_400 if "[YILAN]" in s.name else ft.Colors.BLUE_400
-            
-            card = ft.Card(
-                content=ft.Container(
-                    padding=15,
-                    content=ft.Column([
-                        ft.ListTile(
-                            leading=ft.Icon(ft.Icons.ROOFING, color=region_color),
-                            title=ft.Text(s.name, weight=ft.FontWeight.BOLD),
-                            subtitle=ft.Text(f"座標: {s.lat}, {s.lon}"),
-                        ),
-                        ft.Row([
-                            ft.Text(f" 總容量: {s.total_vessel}", color=ft.Colors.GREY_400),
-                            ft.VerticalDivider(),
-                            ft.Text(f" 目前人數: {s.total_people}", 
-                                   color=ft.Colors.RED_400 if s.total_people > 0 else ft.Colors.GREEN_400),
-                        ], alignment=ft.MainAxisAlignment.START)
-                    ])
-                )
-            )
-            shelter_list.controls.append(card)
+        # 3. 準備 Plotly 3D 繪圖數據
+        lons = [d['lon'] for d in data]
+        lats = [d['lat'] for d in data]
+        heights = [d['z'] for d in data] # Z 軸為容量
+        names = [f"{d['name']}<br>人數: {d['ppl']}" for d in data]
 
-        # 把標題和清單加到頁面
-        page.add(
-            header,
-            ft.Text(f"目前共計: {len(shelters)} 筆資料", color=ft.Colors.GREY_500),
-            ft.Divider(),
-            shelter_list
+        fig = go.Figure(data=[go.Scatter3d(
+            x=lons,
+            y=lats,
+            z=heights,
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=heights,                # 顏色根據容量變化
+                colorscale='Portland',        # 暖色調
+                opacity=0.9,
+                colorbar=dict(title="容量")
+            ),
+            hovertext=names,
+            hoverinfo='text'
+        )])
+
+        # 設定 3D 座標軸標籤
+        fig.update_layout(
+            title="東部避難所 3D 空間分佈 (高度 = 容納量)",
+            scene=dict(
+                xaxis_title='經度 (Lon)',
+                yaxis_title='緯度 (Lat)',
+                zaxis_title='容納量 (Capacity)'
+            ),
+            margin=dict(l=0, r=0, b=0, t=40)
         )
+        
+        fig.show() # 這會彈出瀏覽器顯示互動圖表
 
-    except Exception as e:
-        page.add(ft.Text(f"發生錯誤: {e}", color="red"))
-
-    page.update()
+    # Flet 介面配置
+    page.add(
+        ft.Container(
+            padding=30,
+            content=ft.Column([
+                ft.Text("🛡️ 災難應變 3D 監控系統", size=32, weight="bold"),
+                ft.Text("目前已載入宜蘭、花蓮、台東共 50 處避難所資料", color=ft.Colors.GREY_400),
+                ft.Divider(height=20),
+                ft.ElevatedButton(
+                    "開啟 3D 互動圖表", 
+                    icon=ft.Icons.THREED_ROTATION,
+                    on_click=handle_show_3d,
+                    style=ft.ButtonStyle(padding=20)
+                ),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        )
+    )
 
 if __name__ == "__main__":
     ft.app(target=main)
