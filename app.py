@@ -1,91 +1,83 @@
 import flet as ft
 import plotly.graph_objects as go
-from flet.plotly_chart import PlotlyChart  
-
-from repositories.shelter_repository import ShelterRepository
-from services.map_server import MapService
-
-# ... 前面的 import 不變 ...
+import plotly.offline as pyo
+import time
 
 def main(page: ft.Page):
-    page.title = "Disaster Hub - 內嵌 3D 監控"
+    # --- 1. 頁面基礎設定 ---
+    page.title = "Disaster Hub | 3D 穩定版"
     page.theme_mode = ft.ThemeMode.DARK
-    
-    # 這是右側的顯示區域
-    main_content = ft.Column(
-        [ft.Text("點擊按鈕載入 3D 地圖")], 
-        alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        expand=True
+    page.padding = 0
+    page.bgcolor = "#111111"
+
+    # 主顯示容器
+    main_content = ft.Container(
+        content=ft.Text("點擊按鈕載入地圖", color=ft.Colors.GREY_700),
+        expand=True,
+        alignment=ft.alignment.center,
     )
 
-    def load_3d_map(e):
-    # 1. 顯示讀取中
-        main_content.controls.clear()
-        main_content.controls.append(ft.ProgressRing())
-        main_content.controls.append(ft.Text("正在產生 3D 模型...", color="blue"))
-        page.update()
-
-    try:
-        # --- 測試用最簡化數據 (先確保圖表能顯示) ---
+    # --- 2. 核心邏輯：產生 3D 地圖 HTML ---
+    def get_3d_html():
         fig = go.Figure(data=[go.Scatter3d(
-            x=[1, 2, 3], 
-            y=[4, 5, 6], 
-            z=[7, 8, 9], 
+            x=[1, 2, 3], y=[4, 5, 6], z=[100, 300, 200],
             mode='markers',
-            marker=dict(size=10, color='red')
+            marker=dict(size=10, color='cyan')
         )])
-        
+
         fig.update_layout(
             template="plotly_dark",
             margin=dict(l=0, r=0, b=0, t=0),
-            scene=dict(
-                xaxis_title='經度',
-                yaxis_title='緯度',
-                zaxis_title='容量'
-            )
+            paper_bgcolor='rgba(0,0,0,0)',
+            scene=dict(camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)))
         )
+        # 使用 CDN 載入 plotly.js，避開本地環境衝突
+        return pyo.plot(fig, include_plotlyjs='cdn', output_type='div')
 
-        # 2. 準備 PlotlyChart 元件
-        # 關鍵：加上明確的 height，有時候 Column 內縮放會導致高度變 0
-        chart = PlotlyChart(fig, expand=True)
-
-        # 3. 清除轉圈圈，放入圖表
-        main_content.controls.clear()
-        main_content.controls.append(chart)
+    # --- 3. 事件處理 ---
+    def load_map_action(e):
+        main_content.content = ft.ProgressRing(width=40, height=40)
+        page.update()
         
-    except Exception as ex:
-        # 如果出錯，至少要把錯誤印出來
-        main_content.controls.clear()
-        main_content.controls.append(ft.Text(f"產生失敗: {str(ex)}", color="red"))
-    
-    # 4. 最後一次更新頁面
-    page.update()
-    # 佈局
-    page.add(
-        ft.Row([
-            # 左側側邊欄
-            # 左側側邊欄
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("監控面板", size=25, weight="bold"),
-                    ft.ElevatedButton(
-                        "載入/重整 3D 地圖", 
-                        icon=ft.icons.REFRESH,  # 之前修正的拼字
-                        on_click=load_3d_map    # 確保你的函式名稱與此一致
-                    ),
-                    ft.Divider(),
-                    # 顏色建議直接用字串，如 "green" 或 "green600"
-                    ft.Text("數據狀態: 50 筆已同步", color="green"),
-                ]),
-                width=250,
-                padding=20,
-                bgcolor="surfacevariant" # 修正這裡，改用字串避開 AttributeError
+        try:
+            html_content = get_3d_html()
+            # 使用 HtmlView 是目前解決「全黑」與「JS 崩潰」最穩定的招式
+            main_content.content = ft.HtmlView(
+                html_content, 
+                expand=True,
+                key=f"map_{time.time()}"
+            )
+        except Exception as ex:
+            main_content.content = ft.Text(f"錯誤: {ex}", color="red")
+        
+        page.update()
+
+    # --- 4. UI 佈局 (修正所有 Attribute 錯誤) ---
+    sidebar = ft.Container(
+        content=ft.Column([
+            ft.Text("監控面板", size=24, weight="bold"),
+            ft.Divider(height=20, color="transparent"),
+            ft.ElevatedButton(
+                "載入 3D 地圖",
+                icon=ft.icons.MAP, # 換成最基本的 MAP 圖示，確保不報錯
+                on_click=load_map_action,
+                height=50,
             ),
-            # 右側地圖區
-            ft.VerticalDivider(width=1),
-            main_content
-        ], expand=True)
+            ft.Text("系統就緒", color="green", size=12),
+        ]),
+        width=260,
+        padding=25,
+        bgcolor="#1E1E1E" # 棄用 surfacevariant，直接給顏色值
     )
 
-ft.app(target=main)
+    page.add(
+        ft.Row([
+            sidebar,
+            ft.VerticalDivider(width=1, color="#333333"),
+            main_content
+        ], expand=True, spacing=0)
+    )
+
+if __name__ == "__main__":
+    # 強制 localhost:8501 且使用瀏覽器模式
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8501, host="localhost")
