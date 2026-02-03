@@ -2,34 +2,45 @@ import json
 import os
 from models.shelter import Shelter
 
-#指定資料路徑
 class DataFetcher:
     def __init__(self):
-        self.data_path = [
-            "data_for_refuge\\yilan_shelters.json",
-            "data_for_refuge\\hualian_shelters.json",
-            "data_for_refuge\\taitung_shelters.json"
-        ]
+        # 取得專案根目錄路徑
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 指向你的資料夾：data/data_for_refuge/
+        self.folder_path = os.path.join(current_dir, "..", "data", "data_for_refuge")
 
-    #將本地json資料轉為sheltr物件清單
     def get_shelters(self) -> list[Shelter]:
-        try:
-            with open('data/data_for_refuge.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
+        all_shelters = []
         
-            all_shelters = []
-            #遍歷宜花東key
-            for region in ['yilan_shelter', 'hualian_shelter', 'taitung_shelter']:
-                region_data = data.get(region, [])
-                for item in region_data:
-                        all_shelters.append(Shelter(
-                        name=f"[{region[:2]}] {item['name']}", # 加上地區前綴方便識別
-                        capacity=item['capacity'],
-                        current_ppl=item.get('current_ppl', 0),
-                        lat=item['lat'],
-                        lon=item['lon']
-                    ))
-            return all_shelters
-        except Exception as e:
-            print(f"fetch data error: {e}")
-        return []
+        # 定義你要讀取的檔案清單 (確保檔名與你資料夾內的一致)
+        target_files = {
+            "YILAN": "yilan_shelter.json",
+            "HUALIEN": "hualian_shelter.json",
+            "TAITUNG": "taitung_shelter.json"
+        }
+
+        for region, filename in target_files.items():
+            file_path = os.path.join(self.folder_path, filename)
+            
+            if not os.path.exists(file_path):
+                print(f"找不到檔案: {file_path}，跳過。")
+                continue
+
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for item in data:
+                        # 建立物件並標記地區
+                        shelter = Shelter(
+                            name=f"[{region}] {item.get('name')}",
+                            capacity=item.get("capacity", 0),
+                            current_ppl=item.get("current_ppl", 0),
+                            lat=item.get("lat", 0.0),
+                            lon=item.get("lon", 0.0)
+                        )
+                        all_shelters.append(shelter)
+                print(f"✅ 成功載入 {region} 資料，共 {len(data)} 筆。")
+            except Exception as e:
+                print(f"讀取 {filename} 時發生錯誤: {e}")
+
+        return all_shelters
