@@ -48,7 +48,7 @@ class ShelterRepository:
                     shelters.append(Shelter(
                         name=row[0],
                         total_vessel=row[1],
-                        total_poeple=row[2],
+                        total_people=row[2],
                         lat=row[3],
                         lon=row[4]
                     ))

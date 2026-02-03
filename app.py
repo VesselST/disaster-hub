@@ -1,58 +1,55 @@
 import flet as ft
 from repositories.shelter_repository import ShelterRepository
 
-#flet物件語法
-class ShelterCard(ft.Container):
-    def __init__(self, shelter):
-        super().__init__()
-        remaining = shelter.capacity - shelter.current_ppl
-        is_full = remaining <= 0
-         
-        icon_name = "home" if "activity center" in shelter.name else "school"
+def main(page: ft.Page):
+    page.title = "Disaster Hub - 東部避難所監控系統"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.padding = 20
+    
+    # 建立 Repository 實例
+    repo = ShelterRepository()
+    
+    # 標題
+    header = ft.Text("🌲 東部避難所即時清單", style=ft.TextThemeStyle.HEADLINE_MEDIUM, color=ft.Colors.BLUE_200)
+
+    # 取得資料庫資料
+    try:
+        shelters = repo.get_all_shelters()
         
-        self.content = ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.ListTile(
-                        leading=ft.Icon(name=icon_name, color="blue"),
-                        title=ft.Text(shelter.name, weight="bold"),
-                        subtitle=ft.Text(f"local: {shelter.lat}, {shelter.lon}", size=12),
-                    ),
-                    ft.Container(
-                        padding=10,
-                        content=ft.Row([
-                            ft.Text(f"Toatl: {shelter.capacity}"),
-                            ft.Text(
-                                "already full" if is_full else f"Else: {remaining}",
-                                color="red" if is_full else "green",
-                                weight="bold"
-                            )
-                        ], alignment="spaceBetween")
-                    )
-                ], spacing=0),
-                width=300, 
-                padding=10
-            )
+        # 建立表格
+        data_table = ft.DataTable(
+            columns=[
+                ft.DataColumn(ft.Text("名稱")),
+                ft.DataColumn(ft.Text("總容量"), numeric=True),
+                ft.DataColumn(ft.Text("目前人數"), numeric=True),
+                ft.DataColumn(ft.Text("經緯度")),
+            ],
+            rows=[
+                ft.DataRow(
+                    cells=[
+                        ft.DataCell(ft.Text(s.name)),
+                        ft.DataCell(ft.Text(str(s.total_vessel))),
+                        ft.DataCell(ft.Text(str(s.total_people))),
+                        ft.DataCell(ft.Text(f"{s.lat:.4f}, {s.lon:.4f}")),
+                    ]
+                ) for s in shelters
+            ],
         )
 
-def main(page: ft.Page):
-    page.title = "災害預測模擬系統"
-    page.scroll = "auto"
-    page.theme_mode = "light"
+        # 用滾動視窗包裝表格
+        list_view = ft.ListView(expand=True, spacing=10, padding=10)
+        list_view.controls.append(data_table)
 
-    repo = ShelterRepository()
-    all_shelters = repo.get_all_shelters()
+        page.add(
+            header,
+            ft.Divider(),
+            list_view
+        )
 
-    grid = ft.Row(wrap=True, spacing=20, run_spacing=20)
+    except Exception as e:
+        page.add(ft.Text(f"資料讀取失敗: {e}", color=ft.Colors.RED))
 
-    for s in all_shelters:
-        grid.controls.append(ShelterCard(s))
-
-    page.add(
-        ft.Text("避難所即時資訊", size=30, weight="bold"),
-        ft.Divider(),
-        grid
-    )
+    page.update()
 
 if __name__ == "__main__":
-    ft.app(target=main, view="web_browser", host="0.0.0.0", port=8501)
+    ft.app(target=main)
