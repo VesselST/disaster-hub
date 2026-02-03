@@ -1,7 +1,7 @@
 [
     {   "name":"花蓮縣立體育館",
         "total_vessel":"1500",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市達固湖灣大路23號",
         "lat":"23.9961",
         "lon":"121.5952"
@@ -9,7 +9,7 @@
     ,
     {   "name":"花蓮市中正體育館",
         "total_vessel":"600",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市公園路53號",
         "lat":"23.9782",
         "lon":"121.6115"
@@ -17,7 +17,7 @@
     ,
     {   "name":"花蓮市立圖書館",
         "total_vessel":"150",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市國聯一路170號",
         "lat":"23.9925",
         "lon":"121.6035"
@@ -25,7 +25,7 @@
     ,
     {   "name":"國風國中",
         "total_vessel":"300",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市林政街7號",
         "lat":"23.9745",
         "lon":"121.6015"
@@ -33,7 +33,7 @@
     ,
     {   "name":"自強國中",
         "total_vessel":"450",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市裕祥路89號",
         "lat":"23.9875",
         "lon":"121.5892"
@@ -41,7 +41,7 @@
     ,
     {   "name":"民義國小",
         "total_vessel":"500",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市明義街107號",
         "lat":"23.9778",
         "lon":"121.6045"
@@ -49,7 +49,7 @@
     ,
     {   "name":"中原國小",
         "total_vessel":"350",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市中原路531號",
         "lat":"23.9712",
         "lon":"121.5982"
@@ -57,7 +57,7 @@
     ,
     {   "name":"中正國小",
         "total_vessel":"400",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市中正路210號",
         "lat":"23.9735",
         "lon":"121.6072"
@@ -65,7 +65,7 @@
     ,
     {   "name":"中華國小",
         "total_vessel":"400",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市國盛二街22號",
         "lat":"23.9912",
         "lon":"121.6085"
@@ -73,7 +73,7 @@
     ,
     {   "name":"明廉國小",
         "total_vessel":"300",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市中山路903號",
         "lat":"23.9942",
         "lon":"121.5812"
@@ -81,7 +81,7 @@
     ,
     {   "name":"明禮國小",
         "total_vessel":"250",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市明禮路6號",
         "lat":"23.9815",
         "lon":"121.6088"
@@ -89,7 +89,7 @@
     ,
     {   "name":"復興國小",
         "total_vessel":"300",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市府前路682號",
         "lat":"23.9928",
         "lon":"121.6256"
@@ -97,7 +97,7 @@
     ,
     {   "name":"信義國小",
         "total_vessel":"200",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市信義街1號",
         "lat":"23.9792",
         "lon":"121.6025"
@@ -105,7 +105,7 @@
     ,
     {   "name":"花蓮市公所",
         "total_vessel":"100",
-        "total_poeple":"0",
+        "total_people":"0",
         "address":"花蓮縣花蓮市林森路252號",
         "lat":"23.9791",
         "lon":"121.6018"

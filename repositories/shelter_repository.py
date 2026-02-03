@@ -46,28 +46,30 @@ class ShelterRepository:
                 conn.close()
 
     #檢查重複
-    def upsert_shelter(self, name, lat, lon, capacity):
-        #確保一致性 將經緯度轉為空間資料
-        sql = """
-            INSERT INTO shelters (name, lat, lon, capacity, geom)
-            VALUES (%s, %s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
-            ON CONFLICT (name) 
-            DO UPDATE SET 
-                lat = EXCLUDED.lat,
-                lon = EXCLUDED.lon,
-                capacity = EXCLUDED.capacity,
-                geom = EXCLUDED.geom;
-        """
-        conn = None
-        try:
-            conn = self.get_connection()
-            with conn.cursor() as cur:
-                # 傳入參數，對應 SQL 中的 %s
-                cur.execute(sql, (name, lat, lon, capacity, lon, lat))
+    # repositories/shelter_repository.py
+
+def upsert_shelter(self, shelter: Shelter):
+    try:
+        with self.get_connection() as conn:
+            with conn.cursor() as cursor:
+                # 這裡的 SQL 語法要對應到你資料庫的欄位名稱
+                # 假設資料庫欄位叫 capacity
+                sql = """
+                    INSERT INTO shelters (name, capacity, current_ppl, geom)
+                    VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
+                    ON CONFLICT (name) DO UPDATE SET
+                        capacity = EXCLUDED.capacity,
+                        current_ppl = EXCLUDED.current_ppl,
+                        geom = EXCLUDED.geom;
+                """
+                # 修正這裡：使用 shelter.capacity 而不是 shelter.total_vessel
+                cursor.execute(sql, (
+                    shelter.name, 
+                    shelter.total_vessel,  # 這裡要改！
+                    shelter.total_people, 
+                    shelter.lon, 
+                    shelter.lat
+                ))
             conn.commit()
-        except Exception as e:
-            print(f"database error: {e}")
-        finally:
-            if conn:
-                conn.close()
-                #避免連線樹耗盡
+    except Exception as e:
+        print(f"error when upserting {shelter.name}: {e}")

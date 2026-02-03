@@ -1,37 +1,26 @@
-from services.data_fetcher import DataFetcher 
+from services.data_fetcher import DataFetcher
 from repositories.shelter_repository import ShelterRepository
 
 class DataSyncService:
     def __init__(self):
-        #初始化組件
         self.fetcher = DataFetcher()
-        self.repo = ShelterRepository()
+        self.repository = ShelterRepository()
 
-    #讀取json並更新到資料庫
-    def sync(self):
+    def sync(self):  # <--- 確保這個方法名稱是 sync，且縮排正確
         print("starting data synchronization...")
-
-        # 透過 fetcher 取得 shelter 物件清單 
-        # new_data是shelter實例 不是dict
-        new_data = self.fetcher.get_shelters()
+        shelters = self.fetcher.get_shelters()
         
-        if not new_data:
-            print("synchronization aborted,no data fetched.")
+        if not shelters:
+            print("synchronization aborted, no data fetched.")
             return
 
-        #遍歷清單
         success_count = 0
-        for shelter in new_data:
+        for s in shelters:
             try:
-                #用物件的方式存屬性
-                self.repo.upsert_shelter(
-                    name=shelter.name,
-                    lat=shelter.lat,
-                    lon=shelter.lon,
-                    total_vessel=shelter.total_vessel
-                )
+                # 這裡要對應你 Repository 裡面的方法名
+                self.repository.upsert_shelter(s)
                 success_count += 1
             except Exception as e:
-                print(f"error when upserting {shelter.name}: {e}")
-
-        print(f"synchronization success {success_count}/{len(new_data)}times data ")
+                print(f"error when upserting {s.name}: {e}")
+        
+        print(f"synchronization success {success_count}/{len(shelters)} times data")
