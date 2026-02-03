@@ -34,7 +34,7 @@ class DataFetcher:
                         shelter = Shelter(
                             name=f"[{region_name}] {item.get('name')}",
                             total_vessel=int(item.get("total_vessel", 0)),
-                            total_poeple=int(item.get("total_poeple", 0)),
+                            total_people=int(item.get("total_people", 0)),
                             lat=float(item.get("lat", 0.0)),
                             lon=float(item.get("lon", 0.0))
                         )
