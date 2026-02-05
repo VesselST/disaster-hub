@@ -18,7 +18,7 @@ class DataFetcher:
         
         if not json_files:
             print(f"DEBUG: 掃描路徑為 {self.folder_path}")
-            print("❌ 錯誤：找不到任何 JSON 檔案！")
+            print(" 錯誤：找不到任何 JSON 檔案！")
             return []
 
         for file_path in json_files:
@@ -30,7 +30,6 @@ class DataFetcher:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     for item in data:
-                        # 全部變數名稱直接對齊你的 JSON
                         shelter = Shelter(
                             name=f"[{region_name}] {item.get('name')}",
                             total_vessel=int(item.get("total_vessel", 0)),
@@ -39,7 +38,7 @@ class DataFetcher:
                             lon=float(item.get("lon", 0.0))
                         )
                         all_shelters.append(shelter)
-                print(f"✅ 成功讀取 {filename}，共 {len(data)} 筆資料。")
+                print(f"成功讀取 {filename}，共 {len(data)} 筆資料。")
             except Exception as e:
                 print(f"解析 {filename} 失敗: {e}")
 
