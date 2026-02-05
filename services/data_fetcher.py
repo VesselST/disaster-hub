@@ -5,14 +5,14 @@ from models.shelter import Shelter
 
 class DataFetcher:
     def __init__(self):
-        # 取得專案根目錄，指向你的 data_for_refuge 資料夾
+        # 取得專案根目錄 指向 data_for_refuge 資料夾
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.folder_path = os.path.normpath(os.path.join(current_dir, "..", "data_for_refuge"))
 
     def get_shelters(self) -> list[Shelter]:
         all_shelters = []
         
-        # 自動尋找資料夾內所有 .json 檔案
+        # 找json資料夾
         search_pattern = os.path.join(self.folder_path, "*.json")
         json_files = glob.glob(search_pattern)
         
@@ -23,7 +23,7 @@ class DataFetcher:
 
         for file_path in json_files:
             filename = os.path.basename(file_path)
-            # 取得地區名（例如 yilan_shelter.json -> YILAN）
+            # 取得地區名
             region_name = filename.split('_')[0].upper()
             
             try:
