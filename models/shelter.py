@@ -3,9 +3,9 @@ class Shelter:
     def __init__(self, name: str, total_vessel: int, lat: float, lon: float, total_people: int = 0):
         self.name = name
         self.total_vessel = total_vessel
+        self.total_people = total_people
         self.lat = lat
         self.lon = lon
-        self.total_people = total_people
 
     @property
     #計算負載率

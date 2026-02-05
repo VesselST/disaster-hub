@@ -18,7 +18,7 @@ class DataFetcher:
         
         if not json_files:
             print(f"DEBUG: 掃描路徑為 {self.folder_path}")
-            print(" 錯誤：找不到任何 JSON 檔案！")
+            print(" 錯誤：找不到任何 JSON 檔案")
             return []
 
         for file_path in json_files:
