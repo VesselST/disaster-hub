@@ -2,11 +2,12 @@ from services.data_fetcher import DataFetcher
 from repositories.shelter_repository import ShelterRepository
 
 class DataSyncService:
+    #初始化fetcher/repository
     def __init__(self):
         self.fetcher = DataFetcher()
         self.repository = ShelterRepository()
 
-    def sync(self):  # <--- 確保這個方法名稱是 sync，且縮排正確
+    def sync(self): 
         print("starting data synchronization...")
         shelters = self.fetcher.get_shelters()
         
@@ -17,7 +18,7 @@ class DataSyncService:
         success_count = 0
         for s in shelters:
             try:
-                # 這裡要對應你 Repository 裡面的方法名
+                #呼叫shelter_repository中寫的upsert_shelter函式
                 self.repository.upsert_shelter(s)
                 success_count += 1
             except Exception as e:

@@ -16,7 +16,7 @@ class ShelterRepository:
         conn = psycopg2.connect(**self.conn_params)
         try:
             with conn.cursor() as cursor:
-                #postgreGIS INSERT 語法
+                #postgreGIS INSERT 語法 將物件主轉為空間資料庫格式
                 sql = """
                     INSERT INTO shelters (name, capacity, current_ppl, geom)
                     VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
