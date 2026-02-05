@@ -3,7 +3,7 @@ from models.shelter import Shelter
 
 class ShelterRepository:
     def __init__(self):
-        # 這裡請根據你的資料庫設定調整
+        #連接資料庫初始化參數
         self.conn_params = {
             "dbname": "disaster_db",
             "user": "ian",
@@ -16,7 +16,7 @@ class ShelterRepository:
         conn = psycopg2.connect(**self.conn_params)
         try:
             with conn.cursor() as cursor:
-                # 欄位對齊你的新變數名稱 total_vessel, total_poeple
+                #postgreGIS INSERT 語法
                 sql = """
                     INSERT INTO shelters (name, capacity, current_ppl, geom)
                     VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
@@ -37,7 +37,6 @@ class ShelterRepository:
             conn.close()
 
     def get_all_shelters(self):
-        """供 app.py 呼叫讀取所有資料"""
         conn = psycopg2.connect(**self.conn_params)
         shelters = []
         try:
