@@ -6,7 +6,7 @@ class MapService:
                 "name": s.name,
                 "lat": s.lat,
                 "lon": s.lon,
-                "z": s.total_vessel, # 
+                "z": s.total_vessel, 
                 "ppl": s.total_people
             }
             for s in shelters

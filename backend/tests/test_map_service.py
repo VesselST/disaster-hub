@@ -1,6 +1,5 @@
 import unittest
 from models.shelter import Shelter
-# 這是我們待會要寫的 Service
 from services.map_server import MapService 
 
 class TestMapService(unittest.TestCase):

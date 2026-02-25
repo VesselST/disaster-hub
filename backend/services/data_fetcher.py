@@ -38,8 +38,8 @@ class DataFetcher:
                             lon=float(item.get("lon", 0.0))
                         )
                         all_shelters.append(shelter)
-                print(f"成功讀取 {filename}，共 {len(data)} 筆資料。")
+                print(f"讀取 {filename}，total {len(data)} datas")
             except Exception as e:
-                print(f"解析 {filename} 失敗: {e}")
+                print(f"解析 {filename} error: {e}")
 
         return all_shelters
