@@ -8,7 +8,7 @@ class ShelterRepository:
             "dbname": "disaster_db",
             "user": "ian",
             "password": "Qwerty12345",
-            "host": "localhost",
+            "host": "disaster_db",
             "port": "5432"
         }
 

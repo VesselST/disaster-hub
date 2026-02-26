@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Hub | 3D 避難所監控系統</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --panel-bg: #1a1d2e;
+            --accent-color: #00d4ff;
+            --text-color: #e0e6ed;
+            --border-color: #2d324d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        /* 左側選單 */
+        #left-panel {
+            width: 20%;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 中間 3D 地圖 */
+        #middle-panel {
+            width: 60%;
+            background-color: #000;
+        }
+
+        /* 右側 LLM 助手 */
+        #right-panel {
+            width: 20%;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #8892b0;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 12px;
+            background-color: #252945;
+            color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button {
+            margin-top: 15px;
+            background-color: var(--accent-color);
+            color: #000;
+            font-weight: bold;
+            border: none;
+        }
+
+        #plot-area {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 聊天視窗 */
+        #chat-container {
+            flex-grow: 1;
+            background-color: #0f111a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .chat-input {
+            background-color: #252945;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            width: calc(100% - 22px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="left-panel">
+        <h2>🛡️ 監控中心</h2>
+        <div class="control-group">
+            <label>切換觀測區域</label>
+            <select id="city-select">
+                <option value="all">🌐 全部地區</option>
+                <option value="YILAN">📍 宜蘭地區</option>
+                <option value="HUALIEN">📍 花蓮地區</option>
+                <option value="TAITUNG">📍 台東地區</option>
+            </select>
+        </div>
+        <div id="info-card" style="margin-top: auto; padding: 15px; background: #252945; border-radius: 8px; font-size: 0.85rem;">
+            <p id="stat-count">載入中...</p>
+            <p id="stat-capacity">載入中...</p>
+        </div>
+        <button onclick="load3DData()">🔄 刷新數據</button>
+    </div>
+
+    <div id="middle-panel">
+        <div id="plot-area"></div>
+    </div>
+
+    <div id="right-panel">
+        <h2>🤖 AI 助理</h2>
+        <div id="chat-container">
+            <div style="color: #8892b0;">系統：已連接。請輸入問題。</div>
+        </div>
+        <input type="text" class="chat-input" id="user-input" placeholder="詢問災情建議..." 
+               onkeypress="if(event.key==='Enter') sendMessage(this.value)">
+    </div>
+
+    <script>
+        let fullData = [];
+
+        async function load3DData() {
+            const cityValue = document.getElementById('city-select').value;
+            try {
+                const response = await fetch('/api/3d_data');
+                fullData = await response.json();
+
+                const filteredData = cityValue === 'all' 
+                    ? fullData 
+                    : fullData.filter(d => d.name && d.name.includes(`[${cityValue}]`));
+
+                updateStats(filteredData);
+                renderPlot(filteredData);
+            } catch (error) {
+                console.error("Fetch error:", error);
+            }
+        }
+
+        function updateStats(data) {
+            const total = data.reduce((sum, item) => sum + (item.z || 0), 0);
+            document.getElementById('stat-count').innerText = `避難所總數: ${data.length}`;
+            document.getElementById('stat-capacity').innerText = `總容量: ${total.toLocaleString()}`;
+        }
+
+        function renderPlot(data) {
+            const trace = {
+                x: data.map(d => d.lon),
+                y: data.map(d => d.lat),
+                z: data.map(d => d.z),
+                mode: 'markers',
+                marker: {
+                    size: 7,
+                    color: data.map(d => d.z),
+                    colorscale: 'Portland',
+                    colorbar: { title: '容量' }
+                },
+                type: 'scatter3d',
+                text: data.map(d => `${d.name}<br>容量: ${d.z}`),
+                hoverinfo: 'text'
+            };
+
+            const layout = {
+                paper_bgcolor: '#000',
+                margin: { l: 0, r: 0, b: 0, t: 0 },
+                scene: {
+                    xaxis: { color: '#fff' },
+                    yaxis: { color: '#fff' },
+                    zaxis: { color: '#fff' }
+                }
+            };
+
+            Plotly.newPlot('plot-area', [trace], layout, {responsive: true});
+        }
+
+        function sendMessage(msg) {
+            if (!msg) return;
+            const container = document.getElementById('chat-container');
+            
+            // 修正點：移除原本報錯的 var() 寫法，直接使用顏色代碼
+            container.innerHTML += `<div style="margin-top:10px; color: #00d4ff;"><b>你:</b> ${msg}</div>`;
+            container.innerHTML += `<div style="margin-top:10px;"><b>AI:</b> 收到，正在分析資料中...</div>`;
+            
+            container.scrollTop = container.scrollHeight;
+            document.getElementById('user-input').value = '';
+        }
+
+        document.getElementById('city-select').addEventListener('change', load3DData);
+        window.onload = load3DData;
+    </script>
+</body>
+</html>

@@ -1,26 +1,35 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from repositories.shelter_repository import ShelterRepository
 from services.map_server import MapService
+import uvicorn
 
 app = FastAPI()
 
-# 解決跨域問題，讓前端可以抓取資料
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+# 1. 初始化你原本的 Service 與 Repo
 repo = ShelterRepository()
 map_service = MapService()
 
-@app.get("/api/shelters")
-async def get_shelters_data():
-    # 這裡沿用你原本 app.py 裡的邏輯，但只回傳 JSON 資料
+# 2. 數據 API (供前端 Plotly 使用)
+@app.get("/api/3d_data")
+async def get_3d_data():
     shelters = repo.get_all_shelters()
     data = map_service.prepare_3d_data(shelters)
     return data
 
-# 啟動指令：uvicorn backend.app:app --reload
+# 3. 渲染首頁 (取代 Flet 的 UI)
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    try:
+        with open("static/index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Static/index.html 檔案不存在</h1>"
+
+# 4. 如果有靜態資源就掛載
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+
+if __name__ == "__main__":
+    # 強制跑在 8501
+    uvicorn.run(app, host="0.0.0.0", port=8501)

@@ -22,5 +22,4 @@ RUN pip install --no-cache-dir \
 
 COPY . .
 
-# 使用 8501 埠啟動 FastAPI
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8501", "--reload"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8501", "--reload"]
