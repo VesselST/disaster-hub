@@ -33,3 +33,19 @@ async def read_index():
 if __name__ == "__main__":
     # 強制跑在 8501
     uvicorn.run(app, host="0.0.0.0", port=8501)
+
+@app.post("/api/simulate_disaster")
+async def simulate(data: dict):
+    # data 包含 { lat, lon, radius, type }
+    lat = data.get('lat')
+    lon = data.get('lon')
+    radius = data.get('radius')
+    
+    repo = ShelterRepository()
+    impacted = repo.get_shelters_in_radius(lat, lon, radius)
+    
+    return {
+        "status": "success",
+        "impacted_count": len(impacted),
+        "impacted_shelters": impacted
+    }
