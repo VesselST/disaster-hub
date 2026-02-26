@@ -2,223 +2,203 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Disaster Hub | 3D 避難所監控系統</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Disaster Hub | 3D Map & AI Assistant</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-color: #0f111a;
-            --panel-bg: #1a1d2e;
-            --accent-color: #00d4ff;
-            --text-color: #e0e6ed;
-            --border-color: #2d324d;
-        }
+        :root { --bg: #0b0e14; --panel: #161b22; --accent: #00d4ff; --border: #30363d; --text: #e6edf3; }
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        /* 面板佈局 */
+        #left-panel { width: 18%; background: var(--panel); padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        #middle-panel { flex-grow: 1; position: relative; background: #000; }
+        #right-panel { width: 22%; background: var(--panel); padding: 20px; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        
+        h2 { color: var(--accent); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 0; }
+        
+        /* AI 聊天框樣式 */
+        #chat-container { flex-grow: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow-y: auto; margin: 10px 0; font-size: 0.9rem; }
+        .chat-input { width: calc(100% - 24px); padding: 10px; background: #000; border: 1px solid var(--border); color: white; border-radius: 4px; outline: none; }
+        .chat-input:focus { border-color: var(--accent); }
 
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-        }
-
-        /* 左側選單 */
-        #left-panel {
-            width: 20%;
-            background-color: var(--panel-bg);
-            border-right: 1px solid var(--border-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 中間 3D 地圖 */
-        #middle-panel {
-            width: 60%;
-            background-color: #000;
-        }
-
-        /* 右側 LLM 助手 */
-        #right-panel {
-            width: 20%;
-            background-color: var(--panel-bg);
-            border-left: 1px solid var(--border-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            margin-top: 0;
-            color: var(--accent-color);
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-        }
-
-        .control-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: #8892b0;
-        }
-
-        select, button {
-            width: 100%;
-            padding: 12px;
-            background-color: #252945;
-            color: white;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        button {
-            margin-top: 15px;
-            background-color: var(--accent-color);
-            color: #000;
-            font-weight: bold;
-            border: none;
-        }
-
-        #plot-area {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* 聊天視窗 */
-        #chat-container {
-            flex-grow: 1;
-            background-color: #0f111a;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 15px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-
-        .chat-input {
-            background-color: #252945;
-            border: 1px solid var(--border-color);
-            color: white;
-            padding: 10px;
-            border-radius: 4px;
-            width: calc(100% - 22px);
-        }
+        select { width: 100%; padding: 10px; background: #21262d; color: white; border: 1px solid var(--border); border-radius: 4px; margin: 10px 0; }
+        
+        canvas { display: block; width: 100%; height: 100%; }
+        .stats-item { background: #0d1117; padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 3px solid var(--accent); font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
     <div id="left-panel">
-        <h2>🛡️ 監控中心</h2>
-        <div class="control-group">
-            <label>切換觀測區域</label>
-            <select id="city-select">
-                <option value="all">🌐 全部地區</option>
-                <option value="YILAN">📍 宜蘭地區</option>
-                <option value="HUALIEN">📍 花蓮地區</option>
-                <option value="TAITUNG">📍 台東地區</option>
-            </select>
+        <h2>📊 數據儀表板</h2>
+        <div class="stats-item">
+            <div>當前狀態：<span style="color:var(--accent);">監視中</span></div>
+            <div id="total-cap">總收容力：載入中...</div>
         </div>
-        <div id="info-card" style="margin-top: auto; padding: 15px; background: #252945; border-radius: 8px; font-size: 0.85rem;">
-            <p id="stat-count">載入中...</p>
-            <p id="stat-capacity">載入中...</p>
-        </div>
-        <button onclick="load3DData()">🔄 刷新數據</button>
+        <label>過濾區域</label>
+        <select id="city-select">
+            <option value="all">🌐 全部地區</option>
+            <option value="YILAN">📍 宜蘭地區</option>
+            <option value="HUALIEN">📍 花蓮地區</option>
+            <option value="TAITUNG">📍 台東地區</option>
+        </select>
+        <button onclick="window.location.reload()" style="margin-top:auto; padding:10px; cursor:pointer;">🔄 重設視角</button>
     </div>
 
     <div id="middle-panel">
-        <div id="plot-area"></div>
-    </div>
+        </div>
 
     <div id="right-panel">
-        <h2>🤖 AI 助理</h2>
+        <h2>🤖 AI 顧問</h2>
         <div id="chat-container">
-            <div style="color: #8892b0;">系統：已連接。請輸入問題。</div>
+            <div style="color: #8b949e;">[系統] 3D 空間分析模組已就緒。</div>
         </div>
-        <input type="text" class="chat-input" id="user-input" placeholder="詢問災情建議..." 
-               onkeypress="if(event.key==='Enter') sendMessage(this.value)">
+        <input type="text" class="chat-input" id="user-input" placeholder="詢問災情建議..." onkeypress="if(event.key==='Enter') sendMessage(this.value)">
     </div>
 
-    <script>
-        let fullData = [];
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        async function load3DData() {
-            const cityValue = document.getElementById('city-select').value;
-            try {
-                const response = await fetch('/api/3d_data');
-                fullData = await response.json();
+        let scene, camera, renderer, controls, raycaster, mouse;
+        let bars = [];
+        
+        const BASE_LON = 121.5;
+        const BASE_LAT = 23.9;
+        const SCALE_X = 60;
+        const SCALE_Z = 80;
 
-                const filteredData = cityValue === 'all' 
-                    ? fullData 
-                    : fullData.filter(d => d.name && d.name.includes(`[${cityValue}]`));
+        init();
 
-                updateStats(filteredData);
-                renderPlot(filteredData);
-            } catch (error) {
-                console.error("Fetch error:", error);
+        function init() {
+            const container = document.getElementById('middle-panel');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020406);
+            scene.fog = new THREE.Fog(0x020406, 20, 150);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(15, 20, 30);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            // 光源
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const light = new THREE.DirectionalLight(0xffffff, 1.2);
+            light.position.set(10, 30, 10);
+            scene.add(light);
+
+            // 地圖底座
+            const mapGeo = new THREE.PlaneGeometry(80, 100);
+            const mapMat = new THREE.MeshPhongMaterial({ color: 0x1a1f26, side: THREE.DoubleSide });
+            const mapBase = new THREE.Mesh(mapGeo, mapMat);
+            mapBase.rotation.x = -Math.PI / 2;
+            scene.add(mapBase);
+
+            const grid = new THREE.GridHelper(80, 40, 0x333333, 0x222222);
+            grid.position.y = 0.05;
+            scene.add(grid);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            window.addEventListener('click', onPointClick);
+            window.addEventListener('resize', onResize);
+            
+            loadData();
+            animate();
+        }
+
+        async function loadData() {
+            const city = document.getElementById('city-select').value;
+            const res = await fetch('/api/3d_data');
+            const data = await res.json();
+            
+            bars.forEach(b => scene.remove(b));
+            bars = [];
+            let totalZ = 0;
+
+            data.forEach(d => {
+                if (city !== 'all' && !d.name.includes(`[${city}]`)) return;
+                totalZ += d.z;
+
+                const x = (d.lon - BASE_LON) * SCALE_X;
+                const z = -(d.lat - BASE_LAT) * SCALE_Z;
+                
+                const barHeight = (d.z / 1000) * 12 + 0.2;
+                const geo = new THREE.BoxGeometry(0.8, barHeight, 0.8);
+                const color = d.name.includes('YILAN') ? 0x00d4ff : 0xffcc00;
+                const mat = new THREE.MeshPhongMaterial({ color: color, transparent: true, opacity: 0.9 });
+
+                const bar = new THREE.Mesh(geo, mat);
+                bar.position.set(x, barHeight / 2, z);
+                bar.userData = d;
+
+                scene.add(bar);
+                bars.push(bar);
+            });
+
+            document.getElementById('total-cap').innerText = `總收容力：${totalZ.toLocaleString()} 人`;
+        }
+
+        function onPointClick(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(bars);
+
+            if (intersects.length > 0) {
+                const data = intersects[0].object.userData;
+                addChatMessage(`📍 點擊位置：${data.name}`, 'system-alt');
+                addChatMessage(`🤖 AI：分析顯示該處容量為 ${data.z} 人，適合優先疏散。`, 'ai');
             }
         }
 
-        function updateStats(data) {
-            const total = data.reduce((sum, item) => sum + (item.z || 0), 0);
-            document.getElementById('stat-count').innerText = `避難所總數: ${data.length}`;
-            document.getElementById('stat-capacity').innerText = `總容量: ${total.toLocaleString()}`;
-        }
-
-        function renderPlot(data) {
-            const trace = {
-                x: data.map(d => d.lon),
-                y: data.map(d => d.lat),
-                z: data.map(d => d.z),
-                mode: 'markers',
-                marker: {
-                    size: 7,
-                    color: data.map(d => d.z),
-                    colorscale: 'Portland',
-                    colorbar: { title: '容量' }
-                },
-                type: 'scatter3d',
-                text: data.map(d => `${d.name}<br>容量: ${d.z}`),
-                hoverinfo: 'text'
-            };
-
-            const layout = {
-                paper_bgcolor: '#000',
-                margin: { l: 0, r: 0, b: 0, t: 0 },
-                scene: {
-                    xaxis: { color: '#fff' },
-                    yaxis: { color: '#fff' },
-                    zaxis: { color: '#fff' }
-                }
-            };
-
-            Plotly.newPlot('plot-area', [trace], layout, {responsive: true});
+        function addChatMessage(msg, type) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.style.marginTop = "10px";
+            if(type === 'ai') div.style.color = "#58a6ff";
+            if(type === 'system-alt') div.style.color = "var(--accent)";
+            div.innerHTML = msg;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
 
         function sendMessage(msg) {
-            if (!msg) return;
-            const container = document.getElementById('chat-container');
-            
-            // 修正點：移除原本報錯的 var() 寫法，直接使用顏色代碼
-            container.innerHTML += `<div style="margin-top:10px; color: #00d4ff;"><b>你:</b> ${msg}</div>`;
-            container.innerHTML += `<div style="margin-top:10px;"><b>AI:</b> 收到，正在分析資料中...</div>`;
-            
-            container.scrollTop = container.scrollHeight;
+            if(!msg) return;
+            addChatMessage(`<b>你:</b> ${msg}`, 'user');
             document.getElementById('user-input').value = '';
+            setTimeout(() => addChatMessage(`<b>AI:</b> 正在分析 ${document.getElementById('city-select').value} 地區的 3D 空間數據...`, 'ai'), 500);
         }
 
-        document.getElementById('city-select').addEventListener('change', load3DData);
-        window.onload = load3DData;
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onResize() {
+            const container = document.getElementById('middle-panel');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        document.getElementById('city-select').addEventListener('change', loadData);
     </script>
 </body>
 </html>

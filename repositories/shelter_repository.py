@@ -16,7 +16,7 @@ class ShelterRepository:
         conn = psycopg2.connect(**self.conn_params)
         try:
             with conn.cursor() as cursor:
-                #postgreGIS INSERT 語法 將物件主轉為空間資料庫格式
+                #postGIS INSERT 語法 將物件主轉為空間資料庫格式
                 sql = """
                     INSERT INTO shelters (name, capacity, current_ppl, geom)
                     VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
@@ -54,3 +54,31 @@ class ShelterRepository:
         finally:
             conn.close()
         return shelters
+
+    def get_shelters_in_radius(self, lat: float, lon: float, radius_km: float):
+        """
+        使用 PostGIS 找出中心點半徑內的避難所
+        """
+        conn = psycopg2.connect(**self.conn_params)
+        impacted_shelters = []
+        try:
+            with conn.cursor() as cursor:
+                # radius_km * 1000 因為 ST_DWithin 使用公尺
+                sql = """
+                    SELECT name, capacity, current_ppl, ST_Y(geom::geometry), ST_X(geom::geometry)
+                    FROM shelters
+                    WHERE ST_DWithin(
+                        geom, 
+                        ST_SetSRID(ST_Point(%s, %s), 4326)::geography, 
+                        %s
+                    );
+                """
+                cursor.execute(sql, (lon, lat, radius_km * 1000))
+                rows = cursor.fetchall()
+                for row in rows:
+                    impacted_shelters.append({
+                        "name": row[0], "capacity": row[1], "lat": row[3], "lon": row[4]
+                    })
+        finally:
+            conn.close()
+        return impacted_shelters

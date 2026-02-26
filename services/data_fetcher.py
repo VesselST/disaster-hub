@@ -23,13 +23,14 @@ class DataFetcher:
 
         for file_path in json_files:
             filename = os.path.basename(file_path)
-            # 取得地區名
+            # 自動取得地區名
             region_name = filename.split('_')[0].upper()
             
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     for item in data:
+                        #把json轉為強型別的shelter物件
                         shelter = Shelter(
                             name=f"[{region_name}] {item.get('name')}",
                             total_vessel=int(item.get("total_vessel", 0)),
