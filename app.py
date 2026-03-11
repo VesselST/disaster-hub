@@ -7,18 +7,18 @@ import uvicorn
 
 app = FastAPI()
 
-# 1. 初始化你原本的 Service 與 Repo
+# 1. 初始化server/repo
 repo = ShelterRepository()
 map_service = MapService()
 
-# 2. 數據 API (供前端 Plotly 使用)
+# 2. 數據 API 
 @app.get("/api/3d_data")
 async def get_3d_data():
     shelters = repo.get_all_shelters()
     data = map_service.prepare_3d_data(shelters)
     return data
 
-# 3. 渲染首頁 (取代 Flet 的 UI)
+# 3. 渲染首頁 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
@@ -31,12 +31,10 @@ async def read_index():
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
-    # 強制跑在 8501
     uvicorn.run(app, host="0.0.0.0", port=8501)
 
 @app.post("/api/simulate_disaster")
 async def simulate(data: dict):
-    # data 包含 { lat, lon, radius, type }
     lat = data.get('lat')
     lon = data.get('lon')
     radius = data.get('radius')

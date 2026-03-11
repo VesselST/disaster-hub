@@ -5,7 +5,7 @@ from models.shelter import Shelter
 
 class DataFetcher:
     def __init__(self):
-        # 指向data_for_refuge資料夾
+        #指向data_for_refuge資料夾
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.folder_path = os.path.normpath(os.path.join(current_dir, "..", "data_for_refuge"))
 
