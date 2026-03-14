@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS shelters (
     name VARCHAR(100),
     geom GEOMETRY(Point, 4326),      
     capacity INTEGER,             
-    current_occupancy INTEGER DEFAULT 0
+    current_ppl INTEGER DEFAULT 0
 );

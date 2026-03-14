@@ -1,22 +1,23 @@
+import os
 import psycopg2
 from models.shelter import Shelter
 
 class ShelterRepository:
     def __init__(self):
-        #連接資料庫初始化參數
+        # 連接資料庫初始化參數，從環境變數讀取敏感資訊
         self.conn_params = {
-            "dbname": "disaster_db",
-            "user": "ian",
-            "password": "Qwerty12345",
-            "host": "disaster_db",
-            "port": "5432"
+            "dbname": os.environ.get("POSTGRES_DB", "disaster_db"),
+            "user": os.environ.get("POSTGRES_USER", "ian"),
+            "password": os.environ.get("POSTGRES_PASSWORD"),
+            "host": os.environ.get("POSTGRES_HOST", "disaster_db"),
+            "port": os.environ.get("POSTGRES_PORT", "5432")
         }
 
     def upsert_shelter(self, shelter: Shelter):
         conn = psycopg2.connect(**self.conn_params)
         try:
             with conn.cursor() as cursor:
-                #postGIS INSERT 語法 將物件主轉為空間資料庫格式
+                # postGIS INSERT 語法，將物件轉為空間資料庫格式
                 sql = """
                     INSERT INTO shelters (name, capacity, current_ppl, geom)
                     VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
@@ -26,10 +27,10 @@ class ShelterRepository:
                         geom = EXCLUDED.geom;
                 """
                 cursor.execute(sql, (
-                    shelter.name, 
-                    shelter.total_vessel, 
-                    shelter.total_people, 
-                    shelter.lon, 
+                    shelter.name,
+                    shelter.total_vessel,
+                    shelter.total_people,
+                    shelter.lon,
                     shelter.lat
                 ))
             conn.commit()
@@ -68,8 +69,8 @@ class ShelterRepository:
                     SELECT name, capacity, current_ppl, ST_Y(geom::geometry), ST_X(geom::geometry)
                     FROM shelters
                     WHERE ST_DWithin(
-                        geom, 
-                        ST_SetSRID(ST_Point(%s, %s), 4326)::geography, 
+                        geom,
+                        ST_SetSRID(ST_Point(%s, %s), 4326)::geography,
                         %s
                     );
                 """

@@ -1,3 +1,7 @@
-flet==0.80.3
+fastapi
+uvicorn
 psycopg2-binary
+pandas
+plotly
+requests
 pytest
