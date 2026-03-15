@@ -69,7 +69,7 @@ class ChatService:
                     "prompt": prompt,
                     "stream": False
                 },
-                timeout=60
+                timeout=120
             )
             result = response.json()
             return result.get("response", "無法取得回應").strip()
