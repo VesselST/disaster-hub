@@ -30,6 +30,7 @@
         .msg { margin-bottom: 10px; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); border-left: 3px solid transparent; }
         .msg-ai { border-left-color: var(--accent); background: rgba(0, 212, 255, 0.05); }
         .msg-user { text-align: right; }
+        .msg-loading { border-left-color: #8b949e; color: #8b949e; font-style: italic; }
         canvas { display: block; }
     </style>
 </head>
@@ -106,7 +107,6 @@
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
 
-            // 地圖底座
             const mapGeo = new THREE.PlaneGeometry(200, 200);
             const mapMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1 });
             const ground = new THREE.Mesh(mapGeo, mapMat);
@@ -118,7 +118,6 @@
             sun.position.set(50, 100, 50);
             scene.add(sun);
 
-            // 事件綁定
             document.getElementById('btn-simulate').addEventListener('click', runSimulation);
             document.getElementById('btn-reset').addEventListener('click', clearSim);
             document.getElementById('city-select').addEventListener('change', loadData);
@@ -130,7 +129,6 @@
             animate();
         }
 
-        // 建立立體屋模組
         function createBuilding(x, z, height, color) {
             const group = new THREE.Group();
             const bodyGeo = new THREE.BoxGeometry(0.8, height, 0.8);
@@ -179,10 +177,9 @@
 
             if (disasterMesh) scene.remove(disasterMesh);
 
-            // 根據類型決定顏色
-            let dColor = 0xff4757; // 預設紅 (地震)
-            if(type === 'flood') dColor = 0x00d4ff; // 藍 (淹水)
-            if(type === 'fire') dColor = 0xff8c00; // 橘 (火災)
+            let dColor = 0xff4757;
+            if(type === 'flood') dColor = 0x00d4ff;
+            if(type === 'fire') dColor = 0xff8c00;
 
             const vRad = radius * 1.5; 
             const geo = new THREE.RingGeometry(vRad - 0.5, vRad, 64);
@@ -195,7 +192,6 @@
             disasterMesh.rotation.x = -Math.PI / 2;
             scene.add(disasterMesh);
 
-            // 碰撞檢測：房屋變色
             buildings.forEach(house => {
                 const dist = house.position.distanceTo(new THREE.Vector3(x, 0, z));
                 const body = house.children[0];
@@ -222,13 +218,37 @@
             d.innerHTML = m;
             c.appendChild(d);
             c.scrollTop = c.scrollHeight;
+            return d;
         }
 
-        function sendChat(v) {
-            if(!v) return;
+        // 接上真實 API 的 sendChat
+        async function sendChat(v) {
+            if (!v) return;
             addChat(v, 'user');
             document.getElementById('user-input').value = '';
+
+            // 顯示loading
+            const loadingEl = addChat('🤔 AI 思考中...', 'loading');
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: v })
+                });
+                const data = await res.json();
+
+                // 移除 loading，顯示真實回應
+                loadingEl.remove();
+                addChat(data.reply, 'ai');
+            } catch (e) {
+                loadingEl.remove();
+                addChat('⚠️ 連線失敗，請稍後再試', 'ai');
+            }
         }
+
+        // 把 sendChat 掛到 window 讓 onkeypress 可以呼叫
+        window.sendChat = sendChat;
 
         function animate() {
             requestAnimationFrame(animate);
