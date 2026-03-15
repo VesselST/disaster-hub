@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from repositories.shelter_repository import ShelterRepository
 from services.map_server import MapService
 from services.sync_service import DataSyncService
+from services.chat_service import ChatService
 import uvicorn
 
 app = FastAPI()
@@ -11,6 +12,7 @@ app = FastAPI()
 # 1. 初始化server/repo
 repo = ShelterRepository()
 map_service = MapService()
+chat_service = ChatService()
 
 # 2. 啟動時自動同步一次資料
 @app.on_event("startup")
@@ -48,7 +50,17 @@ async def simulate(data: dict):
         "impacted_shelters": impacted
     }
 
-# 6. 渲染首頁
+# 6. AI 聊天 API
+@app.post("/api/chat")
+async def chat(data: dict):
+    message = data.get("message", "")
+    if not message:
+        return {"status": "error", "reply": "請輸入問題"}
+
+    reply = chat_service.chat(message)
+    return {"status": "success", "reply": reply}
+
+# 7. 渲染首頁
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
@@ -57,7 +69,7 @@ async def read_index():
     except FileNotFoundError:
         return "<h1>Static/index.html 檔案不存在</h1>"
 
-# 7. 靜態資源掛載
+# 8. 靜態資源掛載
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
