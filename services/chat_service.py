@@ -49,10 +49,9 @@ class ChatService:
         """
         context = self._get_relevant_shelters(user_message)
 
-        prompt = f"""你是一個台灣東部災害避難所管理系統的 AI 決策助手。
-請根據以下避難所資料，用繁體中文回答使用者的問題。
-回答要簡潔、清楚，重點放在實用的疏散建議。
-
+        prompt = prompt = f"""你是一個台灣東部災害避難所管理系統的 AI 決策助手。
+請嚴格使用繁體中文回答，不可以夾雜英文或簡體中文。
+不要使用 emoji。回答要簡潔、清楚，重點放在實用的疏散建議。
 【目前避難所資料】
 {context}
 
