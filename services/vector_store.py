@@ -3,13 +3,11 @@ from chromadb.utils import embedding_functions
 
 class VectorStore:
     def __init__(self):
-        # 使用本地持久化儲存
         self.client = chromadb.Client()
-        
-        # 使用預設的 sentence-transformers embedding
-        self.ef = embedding_functions.DefaultEmbeddingFunction()
-        
-        # 建立或取得 collection
+
+        # 明確指定輕量 embedding model，速度較快
+        self.ef = embedding_functions.ONNXMiniLM_L6_V2()
+
         self.collection = self.client.get_or_create_collection(
             name="shelters",
             embedding_function=self.ef
@@ -18,13 +16,11 @@ class VectorStore:
     def build_index(self, shelters: list) -> None:
         """
         將避難所資料向量化並存入 ChromaDB
-        每次啟動重新建立，確保資料是最新的
         """
         if not shelters:
             print("VectorStore: 沒有資料可以建立索引")
             return
 
-        # 清空舊資料
         existing = self.collection.get()
         if existing["ids"]:
             self.collection.delete(ids=existing["ids"])
@@ -34,7 +30,6 @@ class VectorStore:
         ids = []
 
         for i, s in enumerate(shelters):
-            # 把每筆避難所轉成自然語言句子，讓 embedding 更準確
             occupancy_rate = s.occupancy_rate if hasattr(s, 'occupancy_rate') else 0.0
             remaining = s.total_vessel - s.total_people
 
@@ -68,13 +63,11 @@ class VectorStore:
     def search(self, query: str, n_results: int = 10) -> str:
         """
         語意搜尋：找出與 query 最相關的避難所資料
-        回傳組合好的文字 context 給 LLM
         """
         total = self.collection.count()
         if total == 0:
             return "目前沒有避難所資料。"
 
-        # 確保不超過總資料數
         n = min(n_results, total)
 
         results = self.collection.query(
