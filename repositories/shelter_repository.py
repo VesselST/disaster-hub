@@ -1,10 +1,14 @@
 import os
+import time
 import psycopg2
+from psycopg2 import OperationalError
 from models.shelter import Shelter
+
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # 秒
 
 class ShelterRepository:
     def __init__(self):
-        # 連接資料庫初始化參數，從環境變數讀取敏感資訊
         self.conn_params = {
             "dbname": os.environ.get("POSTGRES_DB", "disaster_db"),
             "user": os.environ.get("POSTGRES_USER", "ian"),
@@ -13,11 +17,24 @@ class ShelterRepository:
             "port": os.environ.get("POSTGRES_PORT", "5432")
         }
 
+    def _connect(self):
+        """
+        建立資料庫連線，失敗時自動重試最多 3 次
+        """
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                return psycopg2.connect(**self.conn_params)
+            except OperationalError as e:
+                print(f"DB 連線失敗（第 {attempt} 次）：{e}")
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY)
+                else:
+                    raise RuntimeError(f"資料庫連線失敗，已重試 {MAX_RETRIES} 次：{e}")
+
     def upsert_shelter(self, shelter: Shelter):
-        conn = psycopg2.connect(**self.conn_params)
+        conn = self._connect()
         try:
             with conn.cursor() as cursor:
-                # postGIS INSERT 語法，將物件轉為空間資料庫格式
                 sql = """
                     INSERT INTO shelters (name, capacity, current_ppl, geom)
                     VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326))
@@ -34,15 +51,20 @@ class ShelterRepository:
                     shelter.lat
                 ))
             conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise RuntimeError(f"upsert_shelter 失敗：{e}")
         finally:
             conn.close()
 
     def get_all_shelters(self):
-        conn = psycopg2.connect(**self.conn_params)
+        conn = self._connect()
         shelters = []
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT name, capacity, current_ppl, ST_Y(geom::geometry), ST_X(geom::geometry) FROM shelters")
+                cursor.execute(
+                    "SELECT name, capacity, current_ppl, ST_Y(geom::geometry), ST_X(geom::geometry) FROM shelters"
+                )
                 rows = cursor.fetchall()
                 for row in rows:
                     shelters.append(Shelter(
@@ -52,6 +74,8 @@ class ShelterRepository:
                         lat=row[3],
                         lon=row[4]
                     ))
+        except Exception as e:
+            raise RuntimeError(f"get_all_shelters 失敗：{e}")
         finally:
             conn.close()
         return shelters
@@ -60,11 +84,10 @@ class ShelterRepository:
         """
         使用 PostGIS 找出中心點半徑內的避難所
         """
-        conn = psycopg2.connect(**self.conn_params)
+        conn = self._connect()
         impacted_shelters = []
         try:
             with conn.cursor() as cursor:
-                # radius_km * 1000 因為 ST_DWithin 使用公尺
                 sql = """
                     SELECT name, capacity, current_ppl, ST_Y(geom::geometry), ST_X(geom::geometry)
                     FROM shelters
@@ -80,6 +103,8 @@ class ShelterRepository:
                     impacted_shelters.append({
                         "name": row[0], "capacity": row[1], "lat": row[3], "lon": row[4]
                     })
+        except Exception as e:
+            raise RuntimeError(f"get_shelters_in_radius 失敗：{e}")
         finally:
             conn.close()
         return impacted_shelters
