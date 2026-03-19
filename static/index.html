@@ -170,43 +170,65 @@
             });
         }
 
-        function runSimulation() {
+        // 核心改動：改為呼叫後端 PostGIS，用真實空間計算結果決定變色
+        async function runSimulation() {
             const [lon, lat] = document.getElementById('loc-preset').value.split(',').map(Number);
             const radius = parseFloat(document.getElementById('sim-radius').value);
             const type = document.getElementById('sim-type').value;
 
-            if (disasterMesh) scene.remove(disasterMesh);
-
+            // 顏色對應
             let dColor = 0xff4757;
-            if(type === 'flood') dColor = 0x00d4ff;
-            if(type === 'fire') dColor = 0xff8c00;
+            if (type === 'flood') dColor = 0x00d4ff;
+            if (type === 'fire') dColor = 0xff8c00;
 
-            const vRad = radius * 1.5; 
+            // 畫災害圈
+            if (disasterMesh) scene.remove(disasterMesh);
+            const vRad = radius * 1.5;
             const geo = new THREE.RingGeometry(vRad - 0.5, vRad, 64);
             const mat = new THREE.MeshBasicMaterial({ color: dColor, side: THREE.DoubleSide });
             disasterMesh = new THREE.Mesh(geo, mat);
-            
             const x = (lon - BASE_LON) * LON_SCALE;
             const z = -(lat - BASE_LAT) * LAT_SCALE;
             disasterMesh.position.set(x, 0.2, z);
             disasterMesh.rotation.x = -Math.PI / 2;
             scene.add(disasterMesh);
 
-            buildings.forEach(house => {
-                const dist = house.position.distanceTo(new THREE.Vector3(x, 0, z));
-                const body = house.children[0];
-                if (dist < vRad) {
-                    body.material.color.set(dColor);
-                } else {
-                    body.material.color.set(house.userData.originalColor);
-                }
-            });
+            // 先把所有建築恢復原色
+            buildings.forEach(h => h.children[0].material.color.set(h.userData.originalColor));
 
-            addChat(`⚡ 模擬啟動：[${type.toUpperCase()}]，半徑 ${radius}km`, 'ai');
+            try {
+                // 呼叫後端 PostGIS 取得真實受影響避難所
+                const res = await fetch('/api/simulate_disaster', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lon, radius, type })
+                });
+                const result = await res.json();
+                const impactedNames = new Set(result.impacted_shelters.map(s => s.name));
+
+                // 根據後端結果變色
+                buildings.forEach(house => {
+                    const body = house.children[0];
+                    if (impactedNames.has(house.userData.name)) {
+                        body.material.color.set(dColor);
+                    }
+                });
+
+                addChat(`⚡ 模擬完成：[${type.toUpperCase()}] 半徑 ${radius}km，PostGIS 計算受影響避難所 ${result.impacted_count} 個`, 'ai');
+
+            } catch (e) {
+                // 後端失敗時 fallback 到前端計算
+                buildings.forEach(house => {
+                    const dist = house.position.distanceTo(new THREE.Vector3(x, 0, z));
+                    const body = house.children[0];
+                    if (dist < vRad) body.material.color.set(dColor);
+                });
+                addChat(`⚡ 模擬啟動（本地計算）：[${type.toUpperCase()}]，半徑 ${radius}km`, 'ai');
+            }
         }
 
         function clearSim() {
-            if(disasterMesh) scene.remove(disasterMesh);
+            if (disasterMesh) scene.remove(disasterMesh);
             buildings.forEach(h => h.children[0].material.color.set(h.userData.originalColor));
             addChat("系統：已清除模擬圖層。", "ai");
         }
@@ -221,14 +243,12 @@
             return d;
         }
 
-        // 接上真實 API 的 sendChat
         async function sendChat(v) {
             if (!v) return;
             addChat(v, 'user');
             document.getElementById('user-input').value = '';
 
-            // 顯示loading
-            const loadingEl = addChat('🤔 AI 思考中...', 'loading');
+            const loadingEl = addChat('AI 思考中...', 'loading');
 
             try {
                 const res = await fetch('/api/chat', {
@@ -237,34 +257,24 @@
                     body: JSON.stringify({ message: v })
                 });
                 const data = await res.json();
-
-                // 移除 loading，顯示真實回應
                 loadingEl.remove();
                 addChat(data.reply, 'ai');
             } catch (e) {
                 loadingEl.remove();
-                addChat('⚠️ 連線失敗，請稍後再試', 'ai');
+                addChat('連線失敗，請稍後再試', 'ai');
             }
         }
 
-        // 把 sendChat 掛到 window 讓 onkeypress 可以呼叫
         window.sendChat = sendChat;
 
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
-            if(disasterMesh) {
+            if (disasterMesh) {
                 disasterMesh.scale.multiplyScalar(1.002);
-                if(disasterMesh.scale.x > 1.3) disasterMesh.scale.set(1,1,1);
+                if (disasterMesh.scale.x > 1.3) disasterMesh.scale.set(1, 1, 1);
             }
             renderer.render(scene, camera);
-        }
-
-        function onResize() {
-            const c = document.getElementById('middle-panel');
-            camera.aspect = c.clientWidth / c.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(c.clientWidth, c.clientHeight);
         }
     </script>
 </body>
