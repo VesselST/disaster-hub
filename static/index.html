@@ -55,10 +55,7 @@
             overflow: visible;
         }
 
-        .card-inner {
-            border-radius: var(--radius-large);
-            overflow: hidden;
-        }
+        .card-inner { border-radius: var(--radius-large); overflow: hidden; }
 
         .section-header {
             padding: 12px 16px 6px;
@@ -91,8 +88,7 @@
             display: none;
             position: absolute;
             top: calc(100% + 2px);
-            left: 0;
-            right: 0;
+            left: 0; right: 0;
             background: rgba(250,250,254,0.97);
             backdrop-filter: blur(30px);
             border: 0.5px solid var(--glass-border);
@@ -103,12 +99,10 @@
             transform-origin: top center;
             animation: dropIn 0.16s ease;
         }
-
         @keyframes dropIn {
             from { opacity: 0; transform: scaleY(0.88); }
             to   { opacity: 1; transform: scaleY(1); }
         }
-
         .dropdown-menu.open { display: block; }
 
         .dropdown-option {
@@ -127,17 +121,8 @@
         .dropdown-option.selected { color: var(--ios-blue); font-weight: 500; }
         .checkmark { font-size: 14px; color: var(--ios-blue); }
 
-        .slider-row {
-            padding: 12px 14px;
-            border-top: 0.5px solid var(--separator);
-        }
-
-        .slider-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
+        .slider-row { padding: 12px 14px; border-top: 0.5px solid var(--separator); }
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .slider-label { font-size: 15px; }
         .slider-value { font-size: 15px; font-weight: 500; color: var(--ios-blue); }
 
@@ -153,8 +138,7 @@
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 22px; height: 22px;
             border-radius: 50%;
             background: white;
             box-shadow: 0 1px 6px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.05);
@@ -175,6 +159,7 @@
             transition: opacity 0.15s;
         }
         .btn-primary:active { opacity: 0.75; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-danger {
             padding: 13px;
@@ -191,7 +176,42 @@
         }
         .btn-danger:active { opacity: 0.75; }
 
-        /* 地圖區域 */
+        /* 進度條（模擬進行中） */
+        #sim-progress-wrap {
+            display: none;
+            background: var(--glass);
+            backdrop-filter: blur(40px) saturate(200%);
+            border: 0.5px solid var(--glass-border);
+            border-radius: var(--radius-medium);
+            padding: 12px 14px;
+        }
+
+        #sim-progress-wrap.visible { display: block; }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--label-tertiary);
+            margin-bottom: 7px;
+        }
+
+        #sim-progress-bar-bg {
+            height: 4px;
+            background: rgba(0,122,255,0.15);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #sim-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--ios-blue);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        /* 地圖 */
         #map-panel {
             flex: 1;
             margin: 14px 8px;
@@ -202,12 +222,17 @@
             z-index: 1;
         }
 
-        #map {
-            width: 100%;
-            height: 100%;
+        #map { width: 100%; height: 100%; }
+
+        /* Canvas 覆蓋在地圖上畫人群點 */
+        #crowd-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 400;
         }
 
-        /* Leaflet popup 客製化 */
         .leaflet-popup-content-wrapper {
             background: rgba(255,255,255,0.92);
             backdrop-filter: blur(20px);
@@ -216,50 +241,31 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
             padding: 0 !important;
         }
+        .leaflet-popup-content { margin: 0 !important; padding: 12px 16px !important; }
+        .leaflet-popup-tip { background: rgba(255,255,255,0.92) !important; }
 
-        .leaflet-popup-content {
-            margin: 0 !important;
-            padding: 12px 16px !important;
-        }
+        .popup-name { font-size: 13px; font-weight: 600; color: #000; margin-bottom: 6px; }
+        .popup-row { display: flex; justify-content: space-between; font-size: 12px; color: rgba(60,60,67,0.6); margin-bottom: 3px; }
+        .popup-row span:last-child { color: #000; font-weight: 500; }
+        .popup-bar { height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .popup-bar-fill { height: 100%; background: #34C759; border-radius: 2px; transition: width 0.3s; }
 
-        .leaflet-popup-tip {
-            background: rgba(255,255,255,0.92) !important;
+        /* 圖例 */
+        .legend {
+            position: absolute;
+            bottom: 24px; left: 12px;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            padding: 10px 14px;
+            z-index: 500;
+            font-size: 11px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-
-        .popup-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #000;
-            margin-bottom: 6px;
-        }
-
-        .popup-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: rgba(60,60,67,0.6);
-            margin-bottom: 3px;
-        }
-
-        .popup-row span:last-child {
-            color: #000;
-            font-weight: 500;
-        }
-
-        .popup-bar {
-            height: 4px;
-            background: rgba(0,0,0,0.08);
-            border-radius: 2px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .popup-bar-fill {
-            height: 100%;
-            background: var(--ios-green);
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
+        .legend-item { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; color: rgba(60,60,67,0.75); }
+        .legend-item:last-child { margin-bottom: 0; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
         /* 右側聊天 */
         #chat-panel {
@@ -283,11 +289,7 @@
             overflow: hidden;
         }
 
-        .chat-header {
-            padding: 14px 14px 10px;
-            border-bottom: 0.5px solid var(--separator);
-        }
-
+        .chat-header { padding: 14px 14px 10px; border-bottom: 0.5px solid var(--separator); }
         .chat-title { font-size: 15px; font-weight: 600; }
         .chat-subtitle { font-size: 11px; color: var(--label-tertiary); margin-top: 2px; }
 
@@ -310,43 +312,14 @@
             border-radius: 17px;
             word-break: break-word;
         }
+        .msg-ai { background: white; color: var(--label-primary); align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .msg-user { background: var(--ios-blue); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+        .msg-loading { background: white; color: var(--label-tertiary); align-self: flex-start; border-bottom-left-radius: 5px; font-style: italic; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 
-        .msg-ai {
-            background: white;
-            color: var(--label-primary);
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        }
-
-        .msg-user {
-            background: var(--ios-blue);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 5px;
-        }
-
-        .msg-loading {
-            background: white;
-            color: var(--label-tertiary);
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
-            font-style: italic;
-            font-size: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        }
-
-        .input-bar {
-            padding: 8px 10px;
-            border-top: 0.5px solid var(--separator);
-            display: flex;
-            align-items: center;
-            gap: 7px;
-        }
+        .input-bar { padding: 8px 10px; border-top: 0.5px solid var(--separator); display: flex; align-items: center; gap: 7px; }
 
         .input-field {
-            flex: 1;
-            min-width: 0;
+            flex: 1; min-width: 0;
             padding: 8px 12px;
             background: rgba(255,255,255,0.7);
             border: 0.5px solid rgba(180,200,230,0.35);
@@ -360,8 +333,7 @@
         .input-field:focus { background: rgba(255,255,255,0.95); }
 
         .send-btn {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             flex-shrink: 0;
             background: var(--ios-blue);
             border: none;
@@ -373,42 +345,10 @@
             transition: opacity 0.15s;
         }
         .send-btn:active { opacity: 0.75; }
-
-        /* 圖例 */
-        .legend {
-            position: absolute;
-            bottom: 24px;
-            left: 12px;
-            background: rgba(255,255,255,0.88);
-            backdrop-filter: blur(20px);
-            border: 0.5px solid rgba(255,255,255,0.8);
-            border-radius: 12px;
-            padding: 10px 14px;
-            z-index: 500;
-            font-size: 11px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            margin-bottom: 5px;
-            color: rgba(60,60,67,0.75);
-        }
-        .legend-item:last-child { margin-bottom: 0; }
-
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
     </style>
 </head>
 <body>
 
-<!-- 左側面板 -->
 <div class="sidebar">
     <div class="card">
         <div class="card-inner">
@@ -461,20 +401,32 @@
     </div>
 
     <button class="btn-primary" id="btn-simulate">執行空間模擬</button>
+
+    <!-- 模擬進度條 -->
+    <div id="sim-progress-wrap">
+        <div class="progress-label">
+            <span>人群疏散模擬中</span>
+            <span id="progress-pct">0%</span>
+        </div>
+        <div id="sim-progress-bar-bg">
+            <div id="sim-progress-bar"></div>
+        </div>
+    </div>
+
     <button class="btn-danger" id="btn-reset">清除所有圖層</button>
 </div>
 
-<!-- 地圖 -->
 <div id="map-panel">
     <div id="map"></div>
+    <canvas id="crowd-canvas"></canvas>
     <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#34C759"></div>花蓮 / 台東避難所</div>
         <div class="legend-item"><div class="legend-dot" style="background:#5AC8FA"></div>宜蘭避難所</div>
         <div class="legend-item"><div class="legend-dot" style="background:#FF3B30"></div>受災影響範圍</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FFD60A;border:1px solid #ccc"></div>疏散中人群</div>
     </div>
 </div>
 
-<!-- 右側聊天 -->
 <div id="chat-panel">
     <div class="chat-card">
         <div class="chat-header">
@@ -518,9 +470,7 @@
                 check.className = 'checkmark';
                 check.textContent = '✓';
                 opt.appendChild(check);
-            } else if (!isSelected && check) {
-                check.remove();
-            }
+            } else if (!isSelected && check) { check.remove(); }
         });
         menu.classList.remove('open');
         if (key === 'city') filterMarkers();
@@ -537,14 +487,9 @@
         e.target.style.background = `linear-gradient(to right, #007AFF ${pct}%, rgba(0,122,255,0.18) ${pct}%)`;
     });
 
-    // Leaflet 地圖初始化
-    const map = L.map('map', {
-        center: [23.9, 121.6],
-        zoom: 9,
-        zoomControl: true,
-    });
+    // ── Leaflet ──────────────────────────────────────────────
+    const map = L.map('map', { center: [23.9, 121.6], zoom: 9, zoomControl: true });
 
-    // OpenStreetMap 底圖
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18,
@@ -554,27 +499,40 @@
     let disasterCircle = null;
     let allShelterData = [];
 
-    // 建立自訂 marker 圖示
-    function createMarkerIcon(color, size) {
+    // 每個避難所的目前人數（可動態變化）
+    const shelterOccupancy = {};
+
+    function getOccupancyColor(rate) {
+        if (rate < 0.5) return '#34C759';
+        if (rate < 0.8) return '#FF9500';
+        return '#FF3B30';
+    }
+
+    function createMarkerIcon(baseColor, size, occupancyRate) {
+        const color = occupancyRate > 0 ? getOccupancyColor(occupancyRate) : baseColor;
         return L.divIcon({
             className: '',
             html: `<div style="
                 width:${size}px;height:${size}px;
                 background:${color};
-                border:2px solid white;
+                border:2.5px solid white;
                 border-radius:50%;
                 box-shadow:0 2px 8px rgba(0,0,0,0.2);
-                transition: all 0.2s;
+                display:flex;align-items:center;justify-content:center;
+                font-size:${Math.max(7, size * 0.38)}px;
+                font-weight:600;color:white;
+                font-family:-apple-system,sans-serif;
+                transition:background 0.4s;
             "></div>`,
             iconSize: [size, size],
             iconAnchor: [size/2, size/2],
         });
     }
 
-    // 載入避難所資料
     async function loadShelters() {
         const res = await fetch('/api/3d_data');
         allShelterData = await res.json();
+        allShelterData.forEach(d => { shelterOccupancy[d.name] = d.ppl || 0; });
         renderMarkers(allShelterData);
     }
 
@@ -583,39 +541,50 @@
         markers = [];
 
         data.forEach(d => {
-            const color = d.name.includes('YILAN') ? '#5AC8FA' : '#34C759';
-            const size = Math.max(10, Math.min(24, d.z / 100));
-            const occupancy = d.ppl / d.z * 100 || 0;
-            const remaining = d.z - d.ppl;
+            const baseColor = d.name.includes('YILAN') ? '#5AC8FA' : '#34C759';
+            const size = Math.max(12, Math.min(26, d.z / 80));
+            const occ = shelterOccupancy[d.name] || 0;
+            const rate = occ / d.z;
 
             const marker = L.marker([d.lat, d.lon], {
-                icon: createMarkerIcon(color, size)
+                icon: createMarkerIcon(baseColor, size, rate)
             });
 
-            marker.bindPopup(`
-                <div class="popup-name">${d.name.replace(/\[.*?\]\s*/,'')}</div>
-                <div class="popup-row"><span>總容量</span><span>${d.z} 人</span></div>
-                <div class="popup-row"><span>目前入住</span><span>${d.ppl} 人</span></div>
-                <div class="popup-row"><span>剩餘空間</span><span>${remaining} 人</span></div>
-                <div class="popup-bar">
-                    <div class="popup-bar-fill" style="width:${occupancy}%;background:${occupancy > 80 ? '#FF3B30' : '#34C759'}"></div>
-                </div>
-            `, { maxWidth: 200 });
-
+            marker.bindPopup(() => buildPopup(d));
             marker.userData = d;
-            marker.originalColor = color;
+            marker.baseColor = baseColor;
+            marker.markerSize = size;
             marker.addTo(map);
             markers.push(marker);
         });
     }
 
+    function buildPopup(d) {
+        const occ = shelterOccupancy[d.name] || 0;
+        const remaining = Math.max(0, d.z - occ);
+        const rate = Math.min(100, Math.round(occ / d.z * 100));
+        const barColor = rate < 50 ? '#34C759' : rate < 80 ? '#FF9500' : '#FF3B30';
+        return `
+            <div class="popup-name">${d.name.replace(/\[.*?\]\s*/,'')}</div>
+            <div class="popup-row"><span>總容量</span><span>${d.z} 人</span></div>
+            <div class="popup-row"><span>目前入住</span><span>${occ} 人</span></div>
+            <div class="popup-row"><span>剩餘空間</span><span>${remaining} 人</span></div>
+            <div class="popup-row"><span>負載率</span><span style="color:${barColor};font-weight:600">${rate}%</span></div>
+            <div class="popup-bar"><div class="popup-bar-fill" style="width:${rate}%;background:${barColor}"></div></div>
+        `;
+    }
+
+    function updateMarkerColor(markerObj) {
+        const d = markerObj.userData;
+        const occ = shelterOccupancy[d.name] || 0;
+        const rate = occ / d.z;
+        markerObj.setIcon(createMarkerIcon(markerObj.baseColor, markerObj.markerSize, rate));
+    }
+
     function filterMarkers() {
         const filter = state.city;
-        const filtered = filter === 'all'
-            ? allShelterData
-            : allShelterData.filter(d => d.name.includes(filter));
+        const filtered = filter === 'all' ? allShelterData : allShelterData.filter(d => d.name.includes(filter));
         renderMarkers(filtered);
-
         if (filter !== 'all' && filtered.length > 0) {
             const avg_lat = filtered.reduce((s, d) => s + d.lat, 0) / filtered.length;
             const avg_lon = filtered.reduce((s, d) => s + d.lon, 0) / filtered.length;
@@ -625,7 +594,163 @@
         }
     }
 
-    // 災害模擬
+    // ── Canvas 人群動畫 ──────────────────────────────────────
+    const canvas = document.getElementById('crowd-canvas');
+    const ctx = canvas.getContext('2d');
+    let animationId = null;
+    let particles = [];
+
+    function resizeCanvas() {
+        const panel = document.getElementById('map-panel');
+        canvas.width = panel.clientWidth;
+        canvas.height = panel.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // 地圖座標 → canvas 像素
+    function latLonToCanvas(lat, lon) {
+        const point = map.latLngToContainerPoint(L.latLng(lat, lon));
+        return { x: point.x, y: point.y };
+    }
+
+    // 距離計算（km）
+    function distKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // 找最近的避難所
+    function findNearestShelter(lat, lon, impactedShelters) {
+        let best = null, bestDist = Infinity;
+        impactedShelters.forEach(s => {
+            const d = distKm(lat, lon, s.lat, s.lon);
+            if (d < bestDist) { bestDist = d; best = s; }
+        });
+        return best;
+    }
+
+    function startCrowdAnimation(impactedShelters, disasterLat, disasterLon, radiusKm, dotColor) {
+        if (animationId) cancelAnimationFrame(animationId);
+        particles = [];
+
+        // 重置負載率
+        impactedShelters.forEach(s => { shelterOccupancy[s.name] = 0; });
+        markers.forEach(m => updateMarkerColor(m));
+
+        // 每個受影響避難所依容量比例分配人群點數
+        const totalCapacity = impactedShelters.reduce((s, x) => s + x.capacity, 0);
+        const totalDots = Math.min(200, Math.max(30, Math.round(totalCapacity / 20)));
+
+        impactedShelters.forEach(shelter => {
+            const count = Math.round((shelter.capacity / totalCapacity) * totalDots);
+
+            for (let i = 0; i < count; i++) {
+                // 在災害圓圈範圍內隨機產生起始點
+                const angle = Math.random() * 2 * Math.PI;
+                const r = Math.random() * radiusKm;
+                const startLat = disasterLat + (r / 111) * Math.cos(angle);
+                const startLon = disasterLon + (r / (111 * Math.cos(disasterLat * Math.PI / 180))) * Math.sin(angle);
+
+                // 隨機延遲出發（0~8秒），讓動畫更自然
+                const delay = Math.random() * 8000;
+                const duration = 8000 + Math.random() * 6000;
+
+                particles.push({
+                    startLat, startLon,
+                    targetLat: shelter.lat,
+                    targetLon: shelter.lon,
+                    targetName: shelter.name,
+                    startTime: null,
+                    delay,
+                    duration,
+                    done: false,
+                    color: dotColor,
+                    arrived: false,
+                });
+            }
+        });
+
+        const ANIM_DURATION = 18000; // 整體動畫 18 秒
+        const startTime = performance.now();
+        let totalArrived = 0;
+        const total = particles.length;
+
+        function animate(now) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let allDone = true;
+            particles.forEach(p => {
+                if (p.done) return;
+
+                if (p.startTime === null) p.startTime = now;
+                const elapsed = now - p.startTime - p.delay;
+
+                if (elapsed < 0) { allDone = false; return; }
+
+                const t = Math.min(1, elapsed / p.duration);
+                // easeInOut
+                const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2*t) * t;
+
+                const lat = p.startLat + (p.targetLat - p.startLat) * ease;
+                const lon = p.startLon + (p.targetLon - p.startLon) * ease;
+                const pos = latLonToCanvas(lat, lon);
+
+                if (t >= 1) {
+                    if (!p.arrived) {
+                        p.arrived = true;
+                        totalArrived++;
+                        const shelter = allShelterData.find(s => s.name === p.targetName);
+                        if (shelter) {
+                            const dotsForThisShelter = particles.filter(x => x.targetName === p.targetName).length;
+                            const peoplePerDot = Math.ceil(shelter.z / dotsForThisShelter);
+                            shelterOccupancy[p.targetName] = Math.min(
+                                shelter.z,
+                                (shelterOccupancy[p.targetName] || 0) + peoplePerDot
+                            );
+                            const m = markers.find(mk => mk.userData.name === p.targetName);
+                            if (m) updateMarkerColor(m);
+                        }
+                    }
+                    p.done = true;
+                    return;
+                }
+
+                allDone = false;
+
+                // 畫人群點
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = dotColor;
+                ctx.globalAlpha = 0.85;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // 更新進度條
+            const progress = Math.round((totalArrived / total) * 100);
+            document.getElementById('sim-progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-pct').textContent = `${progress}%`;
+
+            if (!allDone) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                // 動畫結束
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                document.getElementById('sim-progress-wrap').classList.remove('visible');
+                document.getElementById('btn-simulate').disabled = false;
+                addChat(`疏散模擬完成！共 ${total} 批次人群已移入避難所，請查看各避難所目前負載率。`, 'ai');
+            }
+        }
+
+        animationId = requestAnimationFrame(animate);
+    }
+
+    // ── 災害模擬按鈕 ─────────────────────────────────────────
     document.getElementById('btn-simulate').addEventListener('click', async () => {
         const [lon, lat] = state.loc.split(',').map(Number);
         const radius = parseFloat(document.getElementById('sim-radius').value);
@@ -635,26 +760,24 @@
         if (type === 'flood') color = '#007AFF';
         if (type === 'fire') color = '#FF9500';
 
-        // 移除舊圓圈
-        if (disasterCircle) map.removeLayer(disasterCircle);
+        const dotColor = '#FFD60A';
 
-        // 畫災害圓圈（Leaflet 用公尺）
+        if (disasterCircle) map.removeLayer(disasterCircle);
         disasterCircle = L.circle([lat, lon], {
             radius: radius * 1000,
-            color: color,
+            color,
             fillColor: color,
-            fillOpacity: 0.1,
+            fillOpacity: 0.08,
             weight: 2,
-            opacity: 0.7,
+            opacity: 0.6,
             dashArray: '6, 4',
         }).addTo(map);
 
         map.flyTo([lat, lon], 11, { duration: 1 });
 
-        // 重置所有 marker 顏色
         markers.forEach(m => {
             const el = m.getElement()?.querySelector('div');
-            if (el) el.style.background = m.originalColor;
+            if (el) el.style.background = m.baseColor;
         });
 
         try {
@@ -664,30 +787,46 @@
                 body: JSON.stringify({ lat, lon, radius, type })
             });
             const result = await res.json();
-            const impactedNames = new Set(result.impacted_shelters.map(s => s.name));
 
-            markers.forEach(m => {
-                if (impactedNames.has(m.userData?.name)) {
-                    const el = m.getElement()?.querySelector('div');
-                    if (el) el.style.background = color;
-                }
-            });
+            if (result.impacted_count === 0) {
+                addChat(`此範圍內沒有避難所，請擴大半徑或更換模擬中心。`, 'ai');
+                return;
+            }
 
             const typeLabel = type === 'earthquake' ? '強震' : type === 'flood' ? '淹水' : '火災';
-            addChat(`模擬完成：${typeLabel}，半徑 ${radius} km，受影響避難所 ${result.impacted_count} 個`, 'ai');
+            addChat(`模擬啟動：${typeLabel}，半徑 ${radius} km，${result.impacted_count} 個避難所受影響，開始疏散動畫…`, 'ai');
+
+            // 顯示進度條，鎖定按鈕
+            document.getElementById('sim-progress-wrap').classList.add('visible');
+            document.getElementById('btn-simulate').disabled = true;
+
+            // 重置負載率並開始動畫
+            resizeCanvas();
+            startCrowdAnimation(result.impacted_shelters, lat, lon, radius, dotColor);
+
         } catch {
-            addChat(`模擬完成（本地計算），半徑 ${radius} km`, 'ai');
+            addChat(`模擬失敗，請確認後端服務正常運行。`, 'ai');
         }
     });
 
-    // 清除圖層
+    // 清除
     document.getElementById('btn-reset').addEventListener('click', () => {
         if (disasterCircle) { map.removeLayer(disasterCircle); disasterCircle = null; }
-        markers.forEach(m => {
-            const el = m.getElement()?.querySelector('div');
-            if (el) el.style.background = m.originalColor;
-        });
-        addChat("已清除模擬圖層。", "ai");
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles = [];
+        allShelterData.forEach(d => { shelterOccupancy[d.name] = d.ppl || 0; });
+        markers.forEach(m => updateMarkerColor(m));
+        document.getElementById('sim-progress-wrap').classList.remove('visible');
+        document.getElementById('btn-simulate').disabled = false;
+        document.getElementById('sim-progress-bar').style.width = '0%';
+        document.getElementById('progress-pct').textContent = '0%';
+        addChat("已清除模擬圖層與疏散動畫。", "ai");
+    });
+
+    // 地圖移動時重繪 canvas 粒子位置
+    map.on('move zoom', () => {
+        resizeCanvas();
     });
 
     function addChat(m, t) {
@@ -720,7 +859,6 @@
         }
     };
 
-    // 啟動
     loadShelters();
 </script>
 </body>
