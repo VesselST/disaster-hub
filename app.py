@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field, field_validator
 from repositories.shelter_repository import ShelterRepository
 from services.map_server import MapService
 from services.sync_service import DataSyncService
@@ -17,6 +18,24 @@ chat_service = ChatService(vector_store=vector_store)
 
 # 儲存最新模擬結果（記憶體暫存）
 latest_simulation: dict = {}
+
+# Pydantic Models
+class SimulateRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90, description="緯度")
+    lon: float = Field(..., ge=-180, le=180, description="經度")
+    radius: float = Field(..., gt=0, le=100, description="半徑（公里），最大100km")
+    type: str = Field(default="earthquake")
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v):
+        allowed = {"earthquake", "flood", "fire"}
+        if v not in allowed:
+            raise ValueError(f"災害類型必須是 {allowed} 其中之一")
+        return v
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500, description="使用者問題")
 
 # 2. 啟動時同步資料 + 建立向量索引
 @app.on_event("startup")
@@ -47,22 +66,16 @@ async def get_3d_data():
 
 # 5. 災害模擬 API
 @app.post("/api/simulate_disaster")
-async def simulate(data: dict):
+async def simulate(request: SimulateRequest):
     global latest_simulation
 
-    lat = data.get('lat')
-    lon = data.get('lon')
-    radius = data.get('radius')
-    sim_type = data.get('type', 'earthquake')
+    impacted = repo.get_shelters_in_radius(request.lat, request.lon, request.radius)
 
-    impacted = repo.get_shelters_in_radius(lat, lon, radius)
-
-    # 儲存模擬結果供 AI 使用
     latest_simulation = {
-        "type": sim_type,
-        "lat": lat,
-        "lon": lon,
-        "radius_km": radius,
+        "type": request.type,
+        "lat": request.lat,
+        "lon": request.lon,
+        "radius_km": request.radius,
         "impacted_count": len(impacted),
         "impacted_shelters": impacted
     }
@@ -75,12 +88,7 @@ async def simulate(data: dict):
 
 # 6. AI 聊天 API
 @app.post("/api/chat")
-async def chat(data: dict):
-    message = data.get("message", "")
-    if not message:
-        return {"status": "error", "reply": "請輸入問題"}
-
-    # 組合模擬 context（如果有）
+async def chat(request: ChatRequest):
     sim_context = ""
     if latest_simulation:
         sim_context = (
@@ -90,7 +98,7 @@ async def chat(data: dict):
             f"受影響避難所數量：{latest_simulation['impacted_count']} 個。"
         )
 
-    reply = chat_service.chat(message, simulation_context=sim_context)
+    reply = chat_service.chat(request.message, simulation_context=sim_context)
     return {"status": "success", "reply": reply}
 
 # 7. 渲染首頁
