@@ -20,6 +20,7 @@ chat_service = ChatService(vector_store=vector_store)
 latest_simulation: dict = {}
 
 # Pydantic Models
+#規範輸入範圍
 class SimulateRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90, description="緯度")
     lon: float = Field(..., ge=-180, le=180, description="經度")
@@ -37,7 +38,7 @@ class SimulateRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=500, description="使用者問題")
 
-# 2. 啟動時同步資料 + 建立向量索引
+# 跟/api/sync一起進行資料同步和重建索引
 @app.on_event("startup")
 async def startup_sync():
     print("啟動時執行資料同步...")
@@ -48,7 +49,8 @@ async def startup_sync():
     shelters = repo.get_all_shelters()
     vector_store.build_index(shelters)
 
-# 3. 手動觸發同步 + 重建索引
+#sync_service.sync() 讀取json檔案寫入pgSQL
+#vector_store.build_index()重建chromadb向量索引
 @app.post("/api/sync")
 async def manual_sync():
     sync_service = DataSyncService()
@@ -57,14 +59,18 @@ async def manual_sync():
     vector_store.build_index(shelters)
     return {"status": "success", "message": "資料同步與索引重建完成"}
 
-# 4. 數據 API
+# 地圖載入時呼叫
+#去pgSQL拿所有避難所資料
+#shelter 物件轉成前端需要的 json 格式
 @app.get("/api/3d_data")
-async def get_3d_data():
+async def get_3d_data(): 
     shelters = repo.get_all_shelters()
     data = map_service.prepare_3d_data(shelters)
     return data
 
-# 5. 災害模擬 API
+#執行空間模擬時呼叫
+#repository 對 postGIS 執行 ST_DWithin 空間查詢
+#回傳影響範圍清單給前端
 @app.post("/api/simulate_disaster")
 async def simulate(request: SimulateRequest):
     global latest_simulation
@@ -86,7 +92,12 @@ async def simulate(request: SimulateRequest):
         "impacted_shelters": impacted
     }
 
-# 6. AI 聊天 API
+#讀取 latest_simulation
+#呼叫 chat_service.chat() 傳入問題/模擬context
+#chatservice對chromadb進行語意搜尋
+#資料/模擬結果/用戶問題組合成prommpt給llm
+#透過http呼叫ollama
+#llm回答回傳前端
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     sim_context = ""
