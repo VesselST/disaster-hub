@@ -1,9 +1,9 @@
 import os
+import re
 import requests
 from services.vector_store import VectorStore
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
-FASTAPI_HOST = os.environ.get("FASTAPI_HOST", "http://localhost:8501")
 
 SYSTEM_PROMPT = """你是台灣東部災害避難所管理系統的 AI 決策助手。
 你只能使用繁體中文回答，嚴格禁止使用任何英文單字、簡體中文或其他語言。
@@ -18,29 +18,29 @@ GEO_KEYWORDS = ["最近", "附近", "離我最近", "最靠近", "距離最近",
 class ChatService:
     def __init__(self, vector_store: VectorStore, repo=None):
         self.vector_store = vector_store
-        self.repo = repo  # 用於地理查詢
+        self.repo = repo
 
     def _is_geo_query(self, message: str) -> bool:
-        """
-        偵測問題是否為地理距離查詢
-        """
         return any(kw in message for kw in GEO_KEYWORDS)
 
     def _extract_coords(self, message: str):
         """
-        從訊息中嘗試提取經緯度
-        格式支援：緯度 24.75 經度 121.75 或 (24.75, 121.75)
+        支援多種座標格式：
+        - 緯度 23.99 經度 121.60
+        - 23.99 121.60
+        - 23.99/121.60
+        - 23.99,121.60
         """
-        import re
         patterns = [
-            r'緯度[：:＝=\s]*([\d.]+)[,，\s]*經度[：:＝=\s]*([\d.]+)',
-            r'([\d.]+)[,，\s]+([\d.]+)',
+            r'緯度[：:＝=\s]*([\d.]+)[,，/\s]+經度[：:＝=\s]*([\d.]+)',
+            r'([\d.]+)[/,，\s]+([\d.]+)',
         ]
         for pat in patterns:
             m = re.search(pat, message)
             if m:
                 try:
                     lat, lon = float(m.group(1)), float(m.group(2))
+                    # 確認是台灣範圍內的座標
                     if 20 <= lat <= 26 and 119 <= lon <= 123:
                         return lat, lon
                 except:
@@ -49,18 +49,20 @@ class ChatService:
 
     def _get_nearest_context(self, lat: float, lon: float) -> str:
         """
-        呼叫 repo 取得最近避難所，組成文字 context
+        呼叫 repo 取得最近避難所，組成文字 context 給 LLM
         """
         if self.repo is None:
-            return ""
+            return "無法取得避難所資料（repo 未初始化）。"
         try:
             results = self.repo.get_nearest_shelters(lat, lon, limit=5)
             if not results:
                 return "附近沒有找到避難所資料。"
-            lines = ["以下是距離您最近的避難所（依距離排序）："]
-            for s in results:
+
+            lines = [f"使用者位置：緯度 {lat}、經度 {lon}"]
+            lines.append("距離最近的避難所（依距離由近到遠排序）：")
+            for i, s in enumerate(results, 1):
                 lines.append(
-                    f"- {s['name']}：距離 {s['distance_km']} 公里，"
+                    f"{i}. {s['name']}：距離 {s['distance_km']} 公里，"
                     f"容量 {s['capacity']} 人，剩餘空間 {s['remaining']} 人"
                 )
             return "\n".join(lines)
@@ -71,19 +73,21 @@ class ChatService:
         """
         接收使用者問題，根據問題類型選擇 RAG 語意搜尋或 PostGIS 地理查詢
         """
-        # 判斷是否為地理距離查詢
-        if self._is_geo_query(user_message):
-            coords = self._extract_coords(user_message)
-            if coords:
-                lat, lon = coords
-                shelter_context = self._get_nearest_context(lat, lon)
-            else:
-                # 有距離關鍵字但沒有座標，提示使用者提供位置
-                return "請提供您的座標（緯度和經度）以便查詢最近的避難所。例如：緯度 23.99 經度 121.60"
+        is_geo = self._is_geo_query(user_message)
+        coords = self._extract_coords(user_message) if is_geo else None
+
+        if is_geo and coords is None:
+            # 有距離關鍵字但沒有座標，提示使用者提供位置
+            return "請提供您的座標以便查詢最近的避難所。例如：緯度 23.99 經度 121.60"
+
+        if is_geo and coords:
+            lat, lon = coords
+            shelter_context = self._get_nearest_context(lat, lon)
         else:
             # 一般語意查詢，使用 ChromaDB RAG
             shelter_context = self.vector_store.search(user_message)
 
+        # 組合完整 prompt context
         full_context = f"【避難所資料】\n{shelter_context}"
         if simulation_context:
             full_context += f"\n\n【目前災害模擬結果】\n{simulation_context}"
