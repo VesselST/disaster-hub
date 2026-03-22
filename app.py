@@ -14,7 +14,7 @@ app = FastAPI()
 repo = ShelterRepository()
 map_service = MapService()
 vector_store = VectorStore()
-chat_service = ChatService(vector_store=vector_store)
+chat_service = ChatService(vector_store=vector_store, repo=repo)
 
 # 儲存最新模擬結果（記憶體暫存）
 latest_simulation: dict = {}
@@ -37,6 +37,11 @@ class SimulateRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=500, description="使用者問題")
+
+class NearestRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90, description="緯度")
+    lon: float = Field(..., ge=-180, le=180, description="經度")
+    limit: int = Field(default=5, ge=1, le=20, description="回傳筆數")
 
 # 跟/api/sync一起進行資料同步和重建索引
 @app.on_event("startup")
@@ -63,7 +68,7 @@ async def manual_sync():
 #去pgSQL拿所有避難所資料
 #shelter 物件轉成前端需要的 json 格式
 @app.get("/api/3d_data")
-async def get_3d_data(): 
+async def get_3d_data():
     shelters = repo.get_all_shelters()
     data = map_service.prepare_3d_data(shelters)
     return data
@@ -71,6 +76,7 @@ async def get_3d_data():
 #執行空間模擬時呼叫
 #repository 對 postGIS 執行 ST_DWithin 空間查詢
 #回傳影響範圍清單給前端
+#同時將模擬結果存入記憶體供 AI 聊天使用
 @app.post("/api/simulate_disaster")
 async def simulate(request: SimulateRequest):
     global latest_simulation
@@ -92,10 +98,22 @@ async def simulate(request: SimulateRequest):
         "impacted_shelters": impacted
     }
 
+# 最近避難所查詢
+# 使用 PostGIS ST_Distance 真實地理距離排序
+# 解決 RAG 語意搜尋無法處理「最近/附近」等地理問題
+@app.post("/api/nearest_shelter")
+async def nearest_shelter(request: NearestRequest):
+    results = repo.get_nearest_shelters(request.lat, request.lon, request.limit)
+    return {
+        "status": "success",
+        "count": len(results),
+        "shelters": results
+    }
+
 #讀取 latest_simulation
 #呼叫 chat_service.chat() 傳入問題/模擬context
 #chatservice對chromadb進行語意搜尋
-#資料/模擬結果/用戶問題組合成prommpt給llm
+#資料/模擬結果/用戶問題組合成prompt給llm
 #透過http呼叫ollama
 #llm回答回傳前端
 @app.post("/api/chat")
