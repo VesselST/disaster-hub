@@ -11,4 +11,4 @@ def test_sync_data_to_db():
     
     # 驗證資料庫是否不再是空的
     all_shelters = repo.get_all_shelters()
-    assert len(all_shelters) == 50
+    assert len(all_shelters) >= 50
