@@ -108,3 +108,47 @@ class ShelterRepository:
         finally:
             conn.close()
         return impacted_shelters
+
+    def get_nearest_shelters(self, lat: float, lon: float, limit: int = 5):
+        """
+        使用 PostGIS ST_Distance 找出距離中心點最近的 N 個避難所，依距離排序
+        """
+        conn = self._connect()
+        nearest = []
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT
+                        name,
+                        capacity,
+                        current_ppl,
+                        ST_Y(geom::geometry) AS lat,
+                        ST_X(geom::geometry) AS lon,
+                        ROUND(
+                            ST_Distance(
+                                geom::geography,
+                                ST_SetSRID(ST_Point(%s, %s), 4326)::geography
+                            )::numeric / 1000, 2
+                        ) AS distance_km
+                    FROM shelters
+                    ORDER BY geom::geography <-> ST_SetSRID(ST_Point(%s, %s), 4326)::geography
+                    LIMIT %s;
+                """
+                cursor.execute(sql, (lon, lat, lon, lat, limit))
+                rows = cursor.fetchall()
+                for row in rows:
+                    remaining = max(0, row[1] - row[2])
+                    nearest.append({
+                        "name": row[0],
+                        "capacity": row[1],
+                        "current_ppl": row[2],
+                        "remaining": remaining,
+                        "lat": float(row[3]),
+                        "lon": float(row[4]),
+                        "distance_km": float(row[5])
+                    })
+        except Exception as e:
+            raise RuntimeError(f"get_nearest_shelters 失敗：{e}")
+        finally:
+            conn.close()
+        return nearest
