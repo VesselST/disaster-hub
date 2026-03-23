@@ -15,6 +15,17 @@ SYSTEM_PROMPT = """你是台灣東部災害避難所管理系統的 AI 決策助
 # 觸發地理搜尋的關鍵字
 GEO_KEYWORDS = ["最近", "附近", "離我最近", "最靠近", "距離最近", "哪裡最近", "近的"]
 
+# 觸發容量排序查詢的關鍵字
+CAPACITY_KEYWORDS = ["容量最大", "最多人", "容納最多", "最大容量", "哪個最大", "最大的避難所", "容量最高"]
+
+# 地區關鍵字對應
+REGION_MAP = {
+    "宜蘭": "YILAN",
+    "花蓮": "HUALIEN",
+    "台東": "TAITUNG",
+    "臺東": "TAITUNG",
+}
+
 class ChatService:
     def __init__(self, vector_store: VectorStore, repo=None):
         self.vector_store = vector_store
@@ -22,6 +33,56 @@ class ChatService:
 
     def _is_geo_query(self, message: str) -> bool:
         return any(kw in message for kw in GEO_KEYWORDS)
+
+    def _is_capacity_query(self, message: str) -> bool:
+        return any(kw in message for kw in CAPACITY_KEYWORDS)
+
+    def _extract_region(self, message: str):
+        """從訊息中偵測地區關鍵字"""
+        for word, tag in REGION_MAP.items():
+            if word in message:
+                return tag
+        return None
+
+    def _get_capacity_context(self, message: str) -> str:
+        """
+        取得容量最大的避難所，支援地區篩選
+        """
+        if self.repo is None:
+            return "無法取得避難所資料。"
+        try:
+            shelters = self.repo.get_all_shelters()
+            if not shelters:
+                return "目前沒有避難所資料。"
+
+            # 地區篩選
+            region = self._extract_region(message)
+            if region:
+                shelters = [s for s in shelters if region in s.name]
+
+            if not shelters:
+                return "該地區沒有找到避難所資料。"
+
+            # 依容量排序
+            shelters.sort(key=lambda s: s.total_vessel, reverse=True)
+            top = shelters[:5]
+
+            region_label = ""
+            for word, tag in REGION_MAP.items():
+                if region == tag:
+                    region_label = f"{word}地區"
+                    break
+
+            lines = [f"{'全東部區域' if not region_label else region_label}容量排名（由大到小）："]
+            for i, s in enumerate(top, 1):
+                remaining = s.total_vessel - s.total_people
+                lines.append(
+                    f"{i}. {s.name}：容量 {s.total_vessel} 人，"
+                    f"剩餘空間 {remaining} 人"
+                )
+            return "\n".join(lines)
+        except Exception as e:
+            return f"容量查詢失敗：{e}"
 
     def _extract_coords(self, message: str):
         """
@@ -40,7 +101,6 @@ class ChatService:
             if m:
                 try:
                     lat, lon = float(m.group(1)), float(m.group(2))
-                    # 確認是台灣範圍內的座標
                     if 20 <= lat <= 26 and 119 <= lon <= 123:
                         return lat, lon
                 except:
@@ -71,20 +131,25 @@ class ChatService:
 
     def chat(self, user_message: str, simulation_context: str = "") -> str:
         """
-        接收使用者問題，根據問題類型選擇 RAG 語意搜尋或 PostGIS 地理查詢
+        接收使用者問題，根據問題類型選擇對應查詢方式：
+        - 容量排序查詢 → 直接排序資料庫
+        - 地理距離查詢 → PostGIS ST_Distance
+        - 一般語意查詢 → ChromaDB RAG
         """
-        is_geo = self._is_geo_query(user_message)
-        coords = self._extract_coords(user_message) if is_geo else None
+        # 優先判斷容量查詢
+        if self._is_capacity_query(user_message):
+            shelter_context = self._get_capacity_context(user_message)
 
-        if is_geo and coords is None:
-            # 有距離關鍵字但沒有座標，提示使用者提供位置
-            return "請提供您的座標以便查詢最近的避難所。例如：緯度 23.99 經度 121.60"
-
-        if is_geo and coords:
+        # 地理距離查詢
+        elif self._is_geo_query(user_message):
+            coords = self._extract_coords(user_message)
+            if coords is None:
+                return "請提供您的座標以便查詢最近的避難所。例如：緯度 23.99 經度 121.60"
             lat, lon = coords
             shelter_context = self._get_nearest_context(lat, lon)
+
+        # 一般語意查詢
         else:
-            # 一般語意查詢，使用 ChromaDB RAG
             shelter_context = self.vector_store.search(user_message)
 
         # 組合完整 prompt context
