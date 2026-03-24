@@ -18,6 +18,9 @@ GEO_KEYWORDS = ["最近", "附近", "離我最近", "最靠近", "距離最近",
 # 觸發容量排序查詢的關鍵字
 CAPACITY_KEYWORDS = ["容量最大", "最多人", "容納最多", "最大容量", "哪個最大", "最大的避難所", "容量最高"]
 
+# 觸發模擬結果查詢的關鍵字
+SIMULATION_KEYWORDS = ["哪些受影響", "受影響的避難所", "哪些避難所受", "模擬結果", "影響範圍", "受災避難所", "哪些被影響"]
+
 # 地區關鍵字對應
 REGION_MAP = {
     "宜蘭": "YILAN",
@@ -30,6 +33,12 @@ class ChatService:
     def __init__(self, vector_store: VectorStore, repo=None):
         self.vector_store = vector_store
         self.repo = repo
+        # 儲存最新模擬結果，由 app.py 注入
+        self.latest_simulation: dict = {}
+
+    def set_simulation(self, simulation: dict):
+        """由 app.py 在每次模擬後呼叫，更新最新模擬結果"""
+        self.latest_simulation = simulation
 
     def _is_geo_query(self, message: str) -> bool:
         return any(kw in message for kw in GEO_KEYWORDS)
@@ -37,17 +46,43 @@ class ChatService:
     def _is_capacity_query(self, message: str) -> bool:
         return any(kw in message for kw in CAPACITY_KEYWORDS)
 
+    def _is_simulation_query(self, message: str) -> bool:
+        return any(kw in message for kw in SIMULATION_KEYWORDS)
+
+    def _get_simulation_context(self) -> str:
+        """
+        直接從 latest_simulation 取得受影響避難所清單
+        不走 RAG，確保答案精確
+        """
+        if not self.latest_simulation:
+            return "目前尚未執行任何災害模擬。"
+
+        sim = self.latest_simulation
+        impacted = sim.get("impacted_shelters", [])
+
+        if not impacted:
+            return "目前模擬範圍內沒有受影響的避難所。"
+
+        type_map = {"earthquake": "強震", "flood": "淹水", "fire": "火災"}
+        sim_type = type_map.get(sim.get("type", ""), sim.get("type", ""))
+
+        lines = [
+            f"災害類型：{sim_type}",
+            f"影響半徑：{sim.get('radius_km', '')} 公里",
+            f"受影響避難所共 {len(impacted)} 個：",
+        ]
+        for i, s in enumerate(impacted, 1):
+            lines.append(f"{i}. {s['name']}（容量 {s['capacity']} 人）")
+
+        return "\n".join(lines)
+
     def _extract_region(self, message: str):
-        """從訊息中偵測地區關鍵字"""
         for word, tag in REGION_MAP.items():
             if word in message:
                 return tag
         return None
 
     def _get_capacity_context(self, message: str) -> str:
-        """
-        取得容量最大的避難所，支援地區篩選
-        """
         if self.repo is None:
             return "無法取得避難所資料。"
         try:
@@ -55,7 +90,6 @@ class ChatService:
             if not shelters:
                 return "目前沒有避難所資料。"
 
-            # 地區篩選
             region = self._extract_region(message)
             if region:
                 shelters = [s for s in shelters if region in s.name]
@@ -63,7 +97,6 @@ class ChatService:
             if not shelters:
                 return "該地區沒有找到避難所資料。"
 
-            # 依容量排序
             shelters.sort(key=lambda s: s.total_vessel, reverse=True)
             top = shelters[:5]
 
@@ -85,13 +118,6 @@ class ChatService:
             return f"容量查詢失敗：{e}"
 
     def _extract_coords(self, message: str):
-        """
-        支援多種座標格式：
-        - 緯度 23.99 經度 121.60
-        - 23.99 121.60
-        - 23.99/121.60
-        - 23.99,121.60
-        """
         patterns = [
             r'緯度[：:＝=\s]*([\d.]+)[,，/\s]+經度[：:＝=\s]*([\d.]+)',
             r'([\d.]+)[/,，\s]+([\d.]+)',
@@ -108,9 +134,6 @@ class ChatService:
         return None
 
     def _get_nearest_context(self, lat: float, lon: float) -> str:
-        """
-        呼叫 repo 取得最近避難所，組成文字 context 給 LLM
-        """
         if self.repo is None:
             return "無法取得避難所資料（repo 未初始化）。"
         try:
@@ -132,12 +155,17 @@ class ChatService:
     def chat(self, user_message: str, simulation_context: str = "") -> str:
         """
         接收使用者問題，根據問題類型選擇對應查詢方式：
+        - 模擬結果查詢 → 直接讀 latest_simulation（最精確）
         - 容量排序查詢 → 直接排序資料庫
         - 地理距離查詢 → PostGIS ST_Distance
         - 一般語意查詢 → ChromaDB RAG
         """
-        # 優先判斷容量查詢
-        if self._is_capacity_query(user_message):
+        # 優先判斷模擬結果查詢
+        if self._is_simulation_query(user_message):
+            shelter_context = self._get_simulation_context()
+
+        # 容量排序查詢
+        elif self._is_capacity_query(user_message):
             shelter_context = self._get_capacity_context(user_message)
 
         # 地理距離查詢

@@ -92,6 +92,9 @@ async def simulate(request: SimulateRequest):
         "impacted_shelters": impacted
     }
 
+# 注入模擬結果到 chat_service 讓llm讀取結果
+    chat_service.set_simulation(latest_simulation)
+
     return {
         "status": "success",
         "impacted_count": len(impacted),
@@ -130,7 +133,7 @@ async def chat(request: ChatRequest):
     reply = chat_service.chat(request.message, simulation_context=sim_context)
     return {"status": "success", "reply": reply}
 
-# 7. 渲染首頁
+# 渲染首頁
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
