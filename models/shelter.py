@@ -8,7 +8,6 @@ class Shelter:
         self.lon = lon
 
     @property
-    #計算負載率
     def occupancy_rate(self) -> float:
         if self.total_vessel == 0:
             return 0.0
