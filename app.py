@@ -113,7 +113,7 @@ async def nearest_shelter(request: NearestRequest):
         "shelters": results
     }
 
-#讀取 latest_simulation
+#讀取latest_simulation
 #呼叫 chat_service.chat() 傳入問題/模擬context
 #chatservice對chromadb進行語意搜尋
 #資料/模擬結果/用戶問題組合成prompt給llm
