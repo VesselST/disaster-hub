@@ -75,7 +75,7 @@ class ShelterRepository:
                         lon=row[4]
                     ))
         except Exception as e:
-            raise RuntimeError(f"get_all_shelters 失敗：{e}")
+            raise RuntimeError(f"get_all_shelters error：{e}")
         finally:
             conn.close()
         return shelters
