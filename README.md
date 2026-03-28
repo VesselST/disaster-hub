@@ -156,5 +156,5 @@ docker exec -it disaster_app pytest tests/ -v
 
 ## 開發者
 
-**劉苡樂 Ian Liu**
-新北市私立淡江高級中學
+**Vessel**
+
