@@ -8,7 +8,7 @@ def test_fetcher_load_data():
     shelters = fetcher.get_shelters()
 
     # Assert
-    assert len(shelters) > 0, "警告：沒讀到任何資料，請檢查 data_for_refuge 資料夾"
+    assert len(shelters) > 0, "警告：沒讀到任何資料 請檢查 data_for_refuge 資料夾"
 
     first = shelters[0]
     assert first.name is not None
