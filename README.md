@@ -54,13 +54,13 @@ cd disaster-hub
 ### 2. 設定環境變數
 
 ```bash
+# 編輯 .env 填入資料庫密碼
 cp  .env
 POSTGRES_DB=YOURDBNAME
 POSTGRES_USER=YOURNAME
 POSTGRES_PASSWORD=YOURPASSWORD
 POSTGRES_HOST=YOURHOST
 POSTGRES_PORT=YOURHOST
-# 編輯 .env 填入資料庫密碼
 ```
 
 ### 3. 啟動服務
